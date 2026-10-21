@@ -1,0 +1,27 @@
+{
+  "name": "@wl/passes",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./apple": "./src/apple.ts",
+    "./google": "./src/google.ts",
+    "./strip": "./src/strip.ts",
+    "./colors": "./src/colors.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@wl/shared": "workspace:*",
+    "node-vibrant": "^3.2.1-alpha.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.1"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "wallet-loyalty",
+  "private": true,
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "db:migrate": "pnpm --filter @wl/db migrate",
+    "db:seed": "pnpm --filter @wl/db seed",
+    "db:reset": "pnpm --filter @wl/db reset"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.1",
+    "tsx": "^4.19.2"
+  }
+}

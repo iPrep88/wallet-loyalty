@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# pnpm blocks package install scripts by default. These two ship prebuilt native
+# binaries and their scripts only select the right one for this platform.
+# (pnpm 12 calls this "allowBuilds"; older versions used onlyBuiltDependencies.)
+allowBuilds:
+  esbuild: true
+  sharp: true
