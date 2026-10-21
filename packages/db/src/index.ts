@@ -11,14 +11,39 @@ export function db(): Pool {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL
     if (!connectionString) throw new Error('DATABASE_URL is not set')
-    pool = new Pool({
-      connectionString,
-      max: 10,
-      // Supabase requires TLS; a local socket must not ask for it.
-      ssl: connectionString.includes('localhost') ? undefined : { rejectUnauthorized: false },
-    })
+    pool = new Pool({ connectionString, max: 10, ssl: sslFor(connectionString) })
   }
   return pool
+}
+
+
+/**
+ * Whether to negotiate TLS for this connection.
+ *
+ * An explicit `sslmode` in the URL wins — that is the standard libpq knob and
+ * anyone setting it means it. Otherwise: a database on this machine speaks over
+ * a loopback interface nobody else can see, and asking it for TLS fails
+ * outright against a server that was never given a certificate. Anything
+ * reached across a network gets TLS.
+ *
+ * Matching on the literal string "localhost" is what this used to do, and it
+ * broke the moment a connection string spelled the same machine `127.0.0.1`.
+ */
+function sslFor(connectionString: string): { rejectUnauthorized: boolean } | undefined {
+  let host: string
+  let sslmode: string | null
+  try {
+    const url = new URL(connectionString)
+    host = url.hostname
+    sslmode = url.searchParams.get('sslmode')
+  } catch {
+    return undefined
+  }
+
+  if (sslmode) return sslmode === 'disable' ? undefined : { rejectUnauthorized: false }
+
+  const isLoopback = host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === ''
+  return isLoopback ? undefined : { rejectUnauthorized: false }
 }
 
 export async function query<T extends QueryResultRow>(
