@@ -59,15 +59,26 @@ export function isBlockedAddress(ip: string): boolean {
   return false
 }
 
-/** Every address a hostname resolves to must be allowed, not just the first. */
-async function hostIsAllowed(hostname: string): Promise<boolean> {
-  if (isIP(hostname)) return !isBlockedAddress(hostname)
+/**
+ * Every address a hostname resolves to must be allowed, not just the first.
+ *
+ * Three outcomes, not two. A name that does not resolve is a different thing
+ * from one that resolves somewhere private, and conflating them told an owner
+ * their shop's website "points at a private network" when the real answer was
+ * that the domain does not exist. Both are refusals; only one is suspicious.
+ */
+type HostVerdict = 'allowed' | 'private' | 'unresolvable'
+
+async function checkHost(hostname: string): Promise<HostVerdict> {
+  if (isIP(hostname)) return isBlockedAddress(hostname) ? 'private' : 'allowed'
+  let records: { address: string }[]
   try {
-    const records = await lookup(hostname, { all: true })
-    return records.length > 0 && records.every((r) => !isBlockedAddress(r.address))
+    records = await lookup(hostname, { all: true })
   } catch {
-    return false
+    return 'unresolvable'
   }
+  if (records.length === 0) return 'unresolvable'
+  return records.every((r) => !isBlockedAddress(r.address)) ? 'allowed' : 'private'
 }
 
 export function normalizeUrl(input: string): URL | null {
@@ -89,14 +100,20 @@ export async function safeFetch(rawUrl: string | URL): Promise<SafeFetchResult> 
   if (!url) return { ok: false, error: 'bad_url', message: 'That does not look like a web address.' }
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    if (!(await hostIsAllowed(url.hostname))) {
+    const verdict = await checkHost(url.hostname)
+    if (verdict === 'unresolvable') {
+      return {
+        ok: false, error: 'unreachable',
+        message: `We could not find ${url.hostname}. Check the spelling, `
+               + 'or skip this and upload your logo.',
+      }
+    }
+    if (verdict === 'private') {
+      // The honest case is an owner whose own domain resolves to this machine
+      // — our server's /etc/hosts points iprep.ca at 127.0.0.1, so from here
+      // that address genuinely is localhost.
       return {
         ok: false, error: 'blocked_host',
-        // Say what happened rather than "could not be reached". The honest
-        // case is an owner whose own domain resolves to this machine — our
-        // server's /etc/hosts points iprep.ca at 127.0.0.1, so from here that
-        // address genuinely is localhost. Telling them "unreachable" sends
-        // them to check a website that is plainly working.
         message: 'That address points at a private network from our server, '
                + 'so there is nothing there for us to read.',
       }
