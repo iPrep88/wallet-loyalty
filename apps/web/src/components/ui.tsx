@@ -7,6 +7,7 @@
  * and the whole promise is that their card is theirs, not ours.
  */
 import type { ReactNode } from 'react'
+import { PRODUCT_NAME } from '@/lib/product'
 
 export function Card(
   { children, className = '', flush = false }:
@@ -128,7 +129,7 @@ export function Logo({ size = 22 }: { size?: number }) {
         <circle cx="12" cy="14.5" r="1.6" fill="var(--accent)" />
         <circle cx="17" cy="14.5" r="1.6" fill="var(--accent)" opacity="0.3" />
       </svg>
-      <span className="text-[14px] font-extrabold tracking-[-0.02em]">Wallet Loyalty</span>
+      <span className="text-[14px] font-extrabold tracking-[-0.02em]">{PRODUCT_NAME}</span>
     </span>
   )
 }

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { stripPath } from '@wl/shared'
 import { storeBySlug } from '@/lib/join'
+import { POWERED_BY } from '@/lib/product'
 import JoinForm from './JoinForm'
 
 export const dynamic = 'force-dynamic'
@@ -67,7 +68,7 @@ export default async function JoinPage(
             {program.back_terms}
           </p>
         )}
-        <p className="mt-6 text-center text-[11px] opacity-50">Powered by Wallet Loyalty</p>
+        <p className="mt-6 text-center text-[11px] opacity-50">{POWERED_BY}</p>
       </div>
     </main>
   )

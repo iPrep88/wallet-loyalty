@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Manrope } from 'next/font/google'
 import './globals.css'
+import { PRODUCT_NAME } from '@/lib/product'
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -10,7 +11,7 @@ const manrope = Manrope({
 })
 
 export const metadata: Metadata = {
-  title: 'Wallet Loyalty',
+  title: PRODUCT_NAME,
   description: 'Stamp cards that live in Apple Wallet and Google Wallet.',
 }
 

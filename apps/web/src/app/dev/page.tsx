@@ -1,5 +1,6 @@
 import { query } from '@wl/db'
 import Link from 'next/link'
+import { PRODUCT_NAME } from '@/lib/product'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,7 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-2xl font-semibold tracking-tight">Wallet Loyalty</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">{PRODUCT_NAME}</h1>
       <p className="mt-2 text-sm text-neutral-500">
         Foundation build — Apple and Google Wallet are not wired up yet.
       </p>

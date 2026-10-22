@@ -7,6 +7,8 @@
  * the same to everybody, because it is a single designed thing rather than a
  * surface that adapts.
  */
+export { PRODUCT_NAME } from '../lib/product'
+
 export const BRAND = {
   midnight:   '#061525',
   deepNavy:   '#0A2035',
