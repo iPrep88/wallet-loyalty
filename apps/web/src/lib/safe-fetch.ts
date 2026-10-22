@@ -92,7 +92,13 @@ export async function safeFetch(rawUrl: string | URL): Promise<SafeFetchResult> 
     if (!(await hostIsAllowed(url.hostname))) {
       return {
         ok: false, error: 'blocked_host',
-        message: 'That address could not be reached.',
+        // Say what happened rather than "could not be reached". The honest
+        // case is an owner whose own domain resolves to this machine — our
+        // server's /etc/hosts points iprep.ca at 127.0.0.1, so from here that
+        // address genuinely is localhost. Telling them "unreachable" sends
+        // them to check a website that is plainly working.
+        message: 'That address points at a private network from our server, '
+               + 'so there is nothing there for us to read.',
       }
     }
 
