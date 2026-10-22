@@ -103,8 +103,18 @@ export async function PUT(req: Request) {
 
   // Shop and store details live on their own tables.
   if (input.shop_name?.trim()) {
-    await query(`update companies set name = $2 where id = $1`,
-      [ctx.company.id, input.shop_name.trim()])
+    const next = input.shop_name.trim()
+    const previous = ctx.company.name
+    await query(`update companies set name = $2 where id = $1`, [ctx.company.id, next])
+
+    // Signup names the first store after the shop. An owner who later renames
+    // the shop means both — they have never been shown that there are two
+    // names. Only rename a store still carrying the old shop name, so a
+    // location someone deliberately called "Yonge St" is left alone.
+    await query(
+      `update stores set name = $2 where company_id = $1 and name = $3`,
+      [ctx.company.id, next, previous],
+    )
   }
   const first = ctx.stores[0]
   if (first) {

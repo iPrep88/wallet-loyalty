@@ -13,7 +13,7 @@ import CardPreview, { type PreviewProgram } from './CardPreview'
 
 interface Props {
   company: { name: string; slug: string }
-  store: { name: string; slug: string; address: string }
+  store: { name: string; slug: string; address: string; showName: boolean }
   program: PreviewProgram & {
     stamp_icon: string
     reward_value_cents: number | null
@@ -120,7 +120,7 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
           <CardPreview
             program={program}
             shopName={shopName || company.name}
-            storeName={store.name !== shopName ? store.name : undefined}
+            storeName={store.showName ? store.name : undefined}
             stamps={Math.min(3, program.stamps_required)}
           />
         </div>

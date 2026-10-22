@@ -15,6 +15,10 @@ export default async function SetupPage() {
         name: ctx.stores[0]?.name ?? ctx.company.name,
         slug: ctx.stores[0]?.slug ?? ctx.company.slug,
         address: ctx.stores[0]?.address ?? '',
+        // A single-location shop has no use for a branch line under its own
+        // name — it is just a second copy of the same words, or worse, a
+        // stale one.
+        showName: ctx.stores.length > 1,
       }}
       program={JSON.parse(JSON.stringify(ctx.program))}
     />

@@ -15,7 +15,7 @@ export default async function JoinPage(
   const { slug } = await params
   const found = await storeBySlug(slug)
   if (!found) notFound()
-  const { store, program, companyName } = found
+  const { store, program, companyName, siblings } = found
 
   const previewStrip = stripPath({
     programId: program.id,
@@ -37,9 +37,11 @@ export default async function JoinPage(
         ) : (
           <h1 className="text-center text-2xl font-semibold tracking-tight">{companyName}</h1>
         )}
-        <p className="mt-1 text-center text-[13px]" style={{ color: program.label_color }}>
-          {store.name}
-        </p>
+        {siblings > 1 && (
+          <p className="mt-1 text-center text-[13px]" style={{ color: program.label_color }}>
+            {store.name}
+          </p>
+        )}
 
         <p className="mt-8 text-center text-3xl font-semibold leading-tight tracking-tight">
           {program.reward_text}

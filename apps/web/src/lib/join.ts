@@ -18,18 +18,24 @@ export function normalizePhone(input: string): string | null {
 }
 
 /** The store behind a join URL, with its company's card design. */
-export async function storeBySlug(
-  slug: string,
-): Promise<{ store: Store; program: Program; companyName: string } | null> {
-  const row = await one<{ store: Store; program: Program; company_name: string }>(
-    `select to_jsonb(s.*) as store, to_jsonb(p.*) as program, c.name as company_name
+export async function storeBySlug(slug: string): Promise<
+  { store: Store; program: Program; companyName: string; siblings: number } | null
+> {
+  const row = await one<{
+    store: Store; program: Program; company_name: string; siblings: string
+  }>(
+    `select to_jsonb(s.*) as store, to_jsonb(p.*) as program, c.name as company_name,
+            (select count(*) from stores x where x.company_id = c.id and x.active) as siblings
        from stores s
        join companies c on c.id = s.company_id
        join programs  p on p.company_id = c.id
       where s.slug = $1 and s.active`,
     [slug],
   )
-  return row ? { store: row.store, program: row.program, companyName: row.company_name } : null
+  return row ? {
+    store: row.store, program: row.program,
+    companyName: row.company_name, siblings: Number(row.siblings),
+  } : null
 }
 
 export async function joinStore(args: {
