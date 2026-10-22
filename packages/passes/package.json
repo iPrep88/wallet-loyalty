@@ -14,7 +14,8 @@
     "./logo": "./src/logo.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:examples": "tsx gen-examples.ts"
   },
   "dependencies": {
     "@wl/shared": "workspace:*",
