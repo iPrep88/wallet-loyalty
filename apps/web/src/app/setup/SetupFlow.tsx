@@ -10,6 +10,7 @@ import {
 } from '@wl/shared/constants'
 import { REWARD_PRESETS, REWARD_MAX_LENGTH } from '@wl/shared/rewards'
 import { inputClass as input } from '@/components/ui'
+import { postForm, postJson } from '@/lib/post'
 import CardPreview, { type PreviewProgram } from './CardPreview'
 
 interface Props {
@@ -48,22 +49,14 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
     if (timer.current) clearTimeout(timer.current)
     const run = async () => {
       setSaving(true); setError(null)
-      try {
-        const res = await fetch('/api/owner/program', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(patch),
-        })
-        const data = await res.json()
-        if (!res.ok || !data.ok) { setError(data.message ?? 'Could not save.'); return }
-        // design_version comes back changed when the look changed, which is
-        // what makes the preview below refresh instead of showing stale art.
-        if (data.program) setProgram((p) => ({ ...p, ...data.program }))
-      } catch {
-        setError('No connection — your last change was not saved.')
-      } finally {
-        setSaving(false)
-      }
+      const result = await postJson<{ program?: typeof initial }>(
+        '/api/owner/program', patch,
+      )
+      setSaving(false)
+      if (!result.ok) { setError(result.message); return }
+      // design_version comes back changed when the look changed, which is what
+      // makes the preview below refresh instead of showing stale artwork.
+      if (result.data.program) setProgram((p) => ({ ...p, ...result.data.program }))
     }
     if (immediate) void run()
     else timer.current = setTimeout(() => void run(), 500)
@@ -77,29 +70,27 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
 
   async function uploadImage(file: File, kind: 'logo' | 'photo' = 'logo') {
     setUploading(true); setError(null)
-    try {
-      const form = new FormData()
-      form.append('logo', file)
-      form.append('kind', kind)
-      const res = await fetch('/api/owner/logo', { method: 'POST', body: form })
-      const data = await res.json()
-      if (!res.ok || !data.ok) { setError(data.message ?? 'Could not read that image.'); return }
-      setProgram((p) => kind === 'photo'
-        ? { ...p, photo_url: data.photo_url, card_style: 'photo',
-            design_version: p.design_version + 1 }
-        : {
-            ...p,
-            logo_url: data.logo_url,
-            bg_color: data.palette.bg,
-            fg_color: data.palette.fg,
-            label_color: data.palette.label,
-            design_version: p.design_version + 1,
-          })
-    } catch {
-      setError('Upload failed. Please try again.')
-    } finally {
-      setUploading(false)
-    }
+    const form = new FormData()
+    form.append('logo', file)
+    form.append('kind', kind)
+    const result = await postForm<{
+      logo_url?: string; photo_url?: string
+      palette?: { bg: string; fg: string; label: string }
+    }>('/api/owner/logo', form)
+    setUploading(false)
+    if (!result.ok) { setError(result.message); return }
+    const data = result.data
+    setProgram((p) => kind === 'photo'
+      ? { ...p, photo_url: data.photo_url ?? null, card_style: 'photo',
+          design_version: p.design_version + 1 }
+      : {
+          ...p,
+          logo_url: data.logo_url ?? null,
+          bg_color: data.palette?.bg ?? p.bg_color,
+          fg_color: data.palette?.fg ?? p.fg_color,
+          label_color: data.palette?.label ?? p.label_color,
+          design_version: p.design_version + 1,
+        })
   }
 
   const joinUrl = typeof window !== 'undefined'

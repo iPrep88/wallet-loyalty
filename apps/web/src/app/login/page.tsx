@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button, Card, Field, Logo, Notice, PageTitle, inputClass } from '@/components/ui'
+import { postJson } from '@/lib/post'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -15,20 +16,10 @@ export default function LoginPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true); setError(null)
-    try {
-      const res = await fetch('/api/owner/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.ok) { setError(data.message ?? 'Something went wrong.'); return }
-      router.push('/dashboard')
-    } catch {
-      setError('No connection. Please try again.')
-    } finally {
-      setBusy(false)
-    }
+    const result = await postJson('/api/owner/login', { email, password })
+    setBusy(false)
+    if (!result.ok) { setError(result.message); return }
+    router.push('/dashboard')
   }
 
   return (

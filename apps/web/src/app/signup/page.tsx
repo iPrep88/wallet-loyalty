@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button, Card, Field, Logo, Notice, PageTitle, inputClass } from '@/components/ui'
+import { postJson } from '@/lib/post'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -16,21 +17,14 @@ export default function SignupPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true); setError(null)
-    try {
-      const res = await fetch('/api/owner/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shop_name: shopName, email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok || !data.ok) { setError(data.message ?? 'Something went wrong.'); return }
-      router.push('/setup')
-    } catch {
-      setError('No connection. Please try again.')
-    } finally {
-      setBusy(false)
-    }
+    const result = await postJson('/api/owner/signup', {
+      shop_name: shopName, email, password,
+    })
+    setBusy(false)
+    if (!result.ok) { setError(result.message); return }
+    router.push('/setup')
   }
+
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-[26rem] flex-col justify-center px-5 py-10">
