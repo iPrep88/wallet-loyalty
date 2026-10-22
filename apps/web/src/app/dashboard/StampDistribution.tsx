@@ -22,8 +22,7 @@ export default function StampDistribution(
 
   if (total === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-neutral-200 px-4 py-8
-                    text-center text-sm text-neutral-500 dark:border-neutral-800">
+      <p className="rounded-xl border border-dashed border-line px-4 py-10 text-center text-[13.5px] text-muted">
         Nothing to show yet — this fills in as customers collect stamps.
       </p>
     )
@@ -40,21 +39,20 @@ export default function StampDistribution(
           return (
             <div key={b.stamps} className="group relative flex flex-1 flex-col justify-end">
               {notable && b.members > 0 && (
-                <span className="mb-1 text-center text-[11px] font-medium tabular-nums
-                                 text-neutral-600 dark:text-neutral-400">
+                <span className="mb-1 text-center text-[11px] font-medium tabular
+                                 text-muted">
                   {b.members}
                 </span>
               )}
               <div
-                className="w-full rounded-t-[4px] bg-[var(--bar)] transition-opacity
+                className="w-full rounded-t-[4px] bg-accent transition-opacity
                            group-hover:opacity-80"
                 style={{ height: `${px}px` }}
               />
               {/* Hover detail, since a bar alone cannot say which bucket it is. */}
               <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1
                                hidden -translate-x-1/2 whitespace-nowrap rounded-md
-                               bg-neutral-900 px-2 py-1 text-[11px] text-white
-                               group-hover:block dark:bg-neutral-100 dark:text-neutral-900">
+                               bg-ink px-2.5 py-1.5 text-[11.5px] font-medium text-page group-hover:block">
                 {b.members} {b.members === 1 ? 'person' : 'people'} on {b.stamps}
                 {b.stamps === stampsRequired ? ' — card full' : ''}
               </span>
@@ -63,16 +61,15 @@ export default function StampDistribution(
         })}
       </div>
 
-      <div className="mt-1.5 flex gap-[2px] border-t border-neutral-200 pt-1.5
-                      dark:border-neutral-800">
+      <div className="mt-1.5 flex gap-[2px] border-t border-line-soft pt-2">
         {buckets.map((b) => (
           <span key={b.stamps}
-                className="flex-1 text-center text-[10px] tabular-nums text-neutral-400">
+                className="flex-1 text-center text-[10px] tabular text-faint">
             {b.stamps}
           </span>
         ))}
       </div>
-      <p className="mt-2 text-[12px] text-neutral-500">
+      <p className="mt-2 text-[12px] text-muted">
         Stamps collected. {buckets[oneAway]?.members
           ? `${buckets[oneAway].members} ${buckets[oneAway].members === 1 ? 'person is' : 'people are'} one visit from a reward.`
           : 'Nobody is one visit away yet.'}

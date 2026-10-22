@@ -9,6 +9,7 @@ import {
   STAMPS_REQUIRED_SUGGESTED, STAMPS_REQUIRED_MIN, STAMPS_REQUIRED_MAX,
 } from '@wl/shared/constants'
 import { REWARD_PRESETS, REWARD_MAX_LENGTH } from '@wl/shared/rewards'
+import { inputClass as input } from '@/components/ui'
 import CardPreview, { type PreviewProgram } from './CardPreview'
 
 interface Props {
@@ -106,10 +107,10 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
       <div className="flex gap-1.5" aria-hidden>
         {STEPS.map((_, i) => (
           <span key={i} className={`h-1 flex-1 rounded-full ${
-            i <= step ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-200 dark:bg-neutral-800'}`} />
+            i <= step ? 'bg-accent' : 'bg-line'}`} />
         ))}
       </div>
-      <p className="mt-3 text-xs text-neutral-500">
+      <p className="mt-3 text-xs text-muted">
         Step {step + 1} of {STEPS.length} · {STEPS[step]}
         {saving && <span className="ml-2 opacity-60">saving…</span>}
       </p>
@@ -142,11 +143,11 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
           <Section title="How should your card look?">
             <div className="space-y-3">
               <button onClick={() => setPath('ready')}
-                className="w-full rounded-2xl border border-neutral-200 p-4 text-left
-                           transition hover:border-neutral-900 dark:border-neutral-800
+                className="w-full rounded-2xl border border-line p-4 text-left
+                           transition hover:border-accent
                            dark:hover:border-white">
                 <span className="block text-[15px] font-semibold">Use a ready-made design</span>
-                <span className="mt-1 block text-[13px] leading-snug text-neutral-500">
+                <span className="mt-1 block text-[13px] leading-snug text-muted">
                   Pick one of six and you are done. Your shop name goes on the front, so
                   customers can tell it from every other card in their wallet.
                 </span>
@@ -159,11 +160,11 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
               </button>
 
               <button onClick={() => setPath('own')}
-                className="w-full rounded-2xl border border-neutral-200 p-4 text-left
-                           transition hover:border-neutral-900 dark:border-neutral-800
+                className="w-full rounded-2xl border border-line p-4 text-left
+                           transition hover:border-accent
                            dark:hover:border-white">
                 <span className="block text-[15px] font-semibold">Design it myself</span>
-                <span className="mt-1 block text-[13px] leading-snug text-neutral-500">
+                <span className="mt-1 block text-[13px] leading-snug text-muted">
                   Upload your logo and we build the card around it. You can change any
                   colour afterwards.
                 </span>
@@ -184,8 +185,8 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                       save({ bg_color: t.bg, fg_color: t.fg, label_color: t.label }, true)
                     }}
                     className={`overflow-hidden rounded-xl border text-left transition ${
-                      chosen ? 'border-neutral-900 dark:border-white'
-                             : 'border-neutral-200 dark:border-neutral-800'}`}>
+                      chosen ? 'border-accent'
+                             : 'border-line'}`}>
                     <span className="flex h-16 items-center justify-center"
                           style={{ backgroundColor: t.bg, color: t.fg }}>
                       <span className="text-[13px] font-semibold">{shopName || 'Your shop'}</span>
@@ -197,7 +198,7 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
             </div>
             <StylePicker program={program} set={set} save={save} />
             <button onClick={() => setPath(null)}
-                    className="mt-5 text-sm text-blue-600 hover:underline">
+                    className="mt-5 text-sm text-link hover:underline">
               Back to the two options
             </button>
           </Section>
@@ -207,9 +208,8 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
           <Section title="Your logo"
                    subtitle="We read your colours out of it and build the card so your logo stays visible.">
             <label className="flex cursor-pointer items-center justify-center gap-2
-                              rounded-xl border border-dashed border-neutral-300 px-4 py-6
-                              text-sm text-neutral-600 dark:border-neutral-700
-                              dark:text-neutral-400">
+                              rounded-xl border border-dashed border-line px-4 py-6
+                              text-sm text-muted">
               <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadImage(f) }} />
               {uploading ? 'Reading your logo…'
@@ -219,17 +219,17 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
             <StylePicker program={program} set={set} save={save} />
 
             <button onClick={() => setCustomising((v) => !v)}
-                    className="mt-5 text-sm text-blue-600 hover:underline">
+                    className="mt-5 text-sm text-link hover:underline">
               {customising ? 'Hide' : 'Change'} the colours
             </button>
 
             {customising && (
-              <div className="mt-4 space-y-4 rounded-xl bg-neutral-50 p-4 dark:bg-neutral-900">
+              <div className="mt-4 space-y-4 rounded-xl bg-surface-2 p-4">
                 <div className="flex flex-wrap gap-4">
                   {([['bg_color','Card'],['fg_color','Text'],['label_color','Labels']] as const)
                     .map(([key, label]) => (
                     <label key={key} className="text-[13px]">
-                      <span className="block text-neutral-500">{label}</span>
+                      <span className="block text-muted">{label}</span>
                       <input type="color" value={program[key]}
                         onChange={(e) => { set(key, e.target.value.toUpperCase())
                                            save({ [key]: e.target.value.toUpperCase() }) }}
@@ -237,9 +237,9 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                     </label>
                   ))}
                 </div>
-                <p className="text-[12px] text-neutral-500">
+                <p className="text-[12px] text-muted">
                   Or start from a ready-made one —{' '}
-                  <button onClick={() => setPath('ready')} className="text-blue-600 hover:underline">
+                  <button onClick={() => setPath('ready')} className="text-link hover:underline">
                     see the six
                   </button>.
                 </p>
@@ -256,8 +256,8 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                   onClick={() => { set('reward_text', r); save({ reward_text: r }, true) }}
                   className={`rounded-lg border px-2.5 py-1.5 text-[13px] ${
                     program.reward_text === r
-                      ? 'border-neutral-900 dark:border-white'
-                      : 'border-neutral-200 dark:border-neutral-700'}`}>
+                      ? 'border-accent'
+                      : 'border-line'}`}>
                   {r}
                 </button>
               ))}
@@ -268,7 +268,7 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                                  save({ reward_text: e.target.value }) }}
               placeholder="Free boba" className={`${input} mt-3`}
             />
-            <p className="mt-1.5 text-[12px] text-neutral-500">
+            <p className="mt-1.5 text-[12px] text-muted">
               {REWARD_MAX_LENGTH - program.reward_text.length} characters left — the card is narrow,
               so short wins.
             </p>
@@ -280,8 +280,8 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                   onClick={() => { set('stamps_required', n); save({ stamps_required: n }, true) }}
                   className={`rounded-lg border px-3 py-1.5 text-[13px] tabular-nums ${
                     program.stamps_required === n
-                      ? 'border-neutral-900 dark:border-white'
-                      : 'border-neutral-200 dark:border-neutral-700'}`}>
+                      ? 'border-accent'
+                      : 'border-line'}`}>
                   {n}
                 </button>
               ))}
@@ -289,26 +289,26 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                 value={program.stamps_required}
                 onChange={(e) => { const n = Number(e.target.value);
                                    set('stamps_required', n); save({ stamps_required: n }) }}
-                className="w-20 rounded-lg border border-neutral-200 px-3 py-1.5 text-[13px]
-                           tabular-nums dark:border-neutral-700 dark:bg-neutral-900" />
+                className="w-20 rounded-lg border border-line px-3 py-1.5 text-[13px]
+                           tabular-nums" />
             </div>
-            <p className="mt-1.5 text-[12px] text-neutral-500">
+            <p className="mt-1.5 text-[12px] text-muted">
               Fewer stamps brings people back sooner. More makes each reward cost you less.
             </p>
 
             <p className="mt-6 text-sm font-medium">What does one reward cost you?</p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-neutral-500">$</span>
+              <span className="text-muted">$</span>
               <input
                 inputMode="decimal" placeholder="7.00"
                 defaultValue={program.reward_value_cents != null
                   ? (program.reward_value_cents / 100).toFixed(2) : ''}
                 onChange={(e) => save({ reward_value: e.target.value })}
-                className="w-28 rounded-xl border border-neutral-300 px-3 py-2.5 text-base
-                           tabular-nums dark:border-neutral-700 dark:bg-neutral-900"
+                className="w-28 rounded-xl border border-line px-3 py-2.5 text-base
+                           tabular-nums"
               />
             </div>
-            <p className="mt-1.5 text-[12px] text-neutral-500">
+            <p className="mt-1.5 text-[12px] text-muted">
               Optional, and only you ever see it. It is what turns "61 rewards redeemed"
               into "$427 given away this month".
             </p>
@@ -343,25 +343,25 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
 
         {step === 4 && (
           <Section title="You are live">
-            <p className="text-[15px] text-neutral-600 dark:text-neutral-400">
+            <p className="text-[15px] text-muted">
               This is your counter code. Customers scan it and the card lands in their
               phone — no app, no account.
             </p>
-            <div className="mt-5 overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
+            <div className="mt-5 overflow-hidden rounded-xl border border-line">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`/api/print/qr/${store.slug}.png`} alt="Your counter QR code"
                    width={900} height={1200} className="w-full" />
             </div>
             <a href={`/api/print/qr/${store.slug}.png`} target="_blank" rel="noopener"
-               className="mt-3 block text-center text-sm text-blue-600 hover:underline">
+               className="mt-3 block text-center text-sm text-link hover:underline">
               Open full size to print
             </a>
-            <p className="mt-6 text-[13px] text-neutral-500">Your join page</p>
-            <code className="mt-1 block break-all rounded-lg bg-neutral-100 px-3 py-2
-                             font-mono text-[12px] dark:bg-neutral-900">{joinUrl}</code>
+            <p className="mt-6 text-[13px] text-muted">Your join page</p>
+            <code className="mt-1 block break-all rounded-lg bg-surface-2 px-3 py-2
+                             font-mono text-[12px]">{joinUrl}</code>
             <a href={`/j/${store.slug}`} target="_blank" rel="noopener"
-               className="mt-4 block rounded-xl bg-neutral-900 px-4 py-3.5 text-center
-                          text-base font-semibold text-white dark:bg-white dark:text-neutral-900">
+               className="mt-4 block rounded-xl bg-accent px-4 py-3.5 text-center
+                          text-base font-semibold text-accent-ink">
               See what customers see
             </a>
           </Section>
@@ -369,20 +369,20 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
       </div>
 
       {error && (
-        <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700
+        <p className="mt-5 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200
                       dark:bg-red-950/40 dark:text-red-300">{error}</p>
       )}
 
       <div className="mt-8 flex gap-3">
         {step > 0 && (
           <button onClick={() => setStep((s) => s - 1)}
-            className="rounded-xl border border-neutral-300 px-5 py-3.5 text-base
-                       font-medium dark:border-neutral-700">Back</button>
+            className="rounded-xl border border-line px-5 py-3.5 text-base
+                       font-medium">Back</button>
         )}
         {step < STEPS.length - 1 && (
           <button onClick={() => setStep((s) => s + 1)}
-            className="flex-1 rounded-xl bg-neutral-900 px-4 py-3.5 text-base font-semibold
-                       text-white dark:bg-white dark:text-neutral-900">
+            className="flex-1 rounded-xl bg-accent px-4 py-3.5 text-base font-semibold
+                       text-accent-ink">
             {step === 3 ? 'Finish' : 'Next'}
           </button>
         )}
@@ -391,10 +391,6 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
   )
 }
 
-const input =
-  'mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 text-base ' +
-  'focus:border-neutral-900 focus:outline-none ' +
-  'dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-400'
 
 function StylePicker(
   { program, set, save }: {
@@ -413,8 +409,8 @@ function StylePicker(
                              save({ card_style: st.id }, true) }}
             className={`rounded-xl border p-2.5 text-left transition ${
               program.card_style === st.id
-                ? 'border-neutral-900 dark:border-white'
-                : 'border-neutral-200 dark:border-neutral-800'}`}>
+                ? 'border-accent'
+                : 'border-line'}`}>
             <span className="block text-[13px] font-medium">{st.name}</span>
           </button>
         ))}
@@ -430,8 +426,8 @@ function StylePicker(
                                  save({ stamp_icon: icon }, true) }}
                 className={`rounded-lg border px-2.5 py-1.5 text-[13px] capitalize ${
                   program.stamp_icon === icon
-                    ? 'border-neutral-900 dark:border-white'
-                    : 'border-neutral-200 dark:border-neutral-700'}`}>
+                    ? 'border-accent'
+                    : 'border-line'}`}>
                 {icon}
               </button>
             ))}
@@ -449,7 +445,7 @@ function Section(
   return (
     <section>
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
-      {subtitle && <p className="mt-1 text-[13px] text-neutral-500">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-[13px] text-muted">{subtitle}</p>}
       <div className="mt-4">{children}</div>
     </section>
   )
@@ -462,7 +458,7 @@ function Labelled(
     <label className="mt-4 block text-sm font-medium first:mt-0">
       {label}
       {children}
-      {hint && <span className="mt-1.5 block text-[12px] font-normal text-neutral-500">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[12px] font-normal text-muted">{hint}</span>}
     </label>
   )
 }

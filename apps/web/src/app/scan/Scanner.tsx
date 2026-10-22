@@ -124,17 +124,16 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
   if (view.kind === 'pin') {
     return (
       <Shell title="Staff sign in">
-        <label className="block text-sm text-neutral-500">
+        <label className="block text-sm text-muted">
           Shop
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="bubble-tea-dundas"
-            className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 text-base
-                       dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1.5 w-full rounded-xl border border-line px-4 py-3 text-base"
           />
         </label>
-        <label className="mt-5 block text-sm text-neutral-500">
+        <label className="mt-5 block text-sm text-muted">
           4-digit PIN
           <input
             type="password"
@@ -142,9 +141,8 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
             maxLength={4}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-            className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3
-                       text-center text-2xl tracking-[0.5em]
-                       dark:border-neutral-700 dark:bg-neutral-900"
+            className="mt-1.5 w-full rounded-xl border border-line px-4 py-3
+                       text-center text-2xl tracking-[0.5em]"
           />
         </label>
         <Button onClick={signIn} disabled={busy || pin.length !== 4 || !slug}>
@@ -159,15 +157,15 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
     return (
       <Shell title="Scan a card" subtitle={staffName ? `Signed in as ${staffName}` : undefined}>
         <CameraReader onToken={resolveToken} />
-        <div className="mt-6 border-t border-neutral-200 pt-6 dark:border-neutral-800">
-          <label className="block text-sm text-neutral-500">
+        <div className="mt-6 border-t border-line pt-6">
+          <label className="block text-sm text-muted">
             Or paste a card token
             <input
               value={manualToken}
               onChange={(e) => setManualToken(e.target.value)}
               placeholder="eyJ…"
-              className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3
-                         font-mono text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              className="mt-1.5 w-full rounded-xl border border-line px-4 py-3
+                         font-mono text-xs"
             />
           </label>
           <Button
@@ -188,7 +186,7 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
     const ready = member.state === 'reward_ready'
     return (
       <Shell title={member.firstName ?? `Member ${member.shortId}`}>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-muted">
           {member.stamps} / {member.stampsRequired} · {member.totalVisits} visit
           {member.totalVisits === 1 ? '' : 's'} · {member.rewardsEarned} reward
           {member.rewardsEarned === 1 ? '' : 's'}
@@ -222,7 +220,7 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
                 onClick={() => setQuantity((q) => Math.min(MAX_QUANTITY, q + 1))}
               />
             </div>
-            <p className="mt-2 text-center text-xs text-neutral-500">
+            <p className="mt-2 text-center text-xs text-muted">
               stamp{quantity === 1 ? '' : 's'}
             </p>
 
@@ -244,7 +242,7 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
   return (
     <div
       className={`min-h-dvh px-6 py-10 ${
-        ready ? 'bg-amber-500 text-amber-950' : 'bg-emerald-600 text-white'
+        ready ? 'bg-amber-500 text-amber-950' : 'bg-emerald-600 text-accent-ink'
       }`}
     >
       <div className="mx-auto max-w-sm text-center">
@@ -330,8 +328,7 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
 
   if (state === 'unsupported' || state === 'denied') {
     return (
-      <p className="rounded-xl bg-neutral-100 px-4 py-3 text-sm text-neutral-600
-                    dark:bg-neutral-900 dark:text-neutral-400">
+      <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">
         {state === 'denied'
           ? 'Camera access was declined — use the token field below.'
           : 'This browser cannot scan QR codes. Use the token field below, or the scanner app.'}
@@ -353,7 +350,7 @@ function Shell(
   return (
     <main className="mx-auto min-h-dvh max-w-sm px-6 py-10">
       <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-      {subtitle && <p className="mt-1 text-xs text-neutral-500">{subtitle}</p>}
+      {subtitle && <p className="mt-1 text-xs text-muted">{subtitle}</p>}
       <div className="mt-6">{children}</div>
     </main>
   )
@@ -368,9 +365,9 @@ function Button(
   },
 ) {
   const styles = {
-    primary: 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900',
-    secondary: 'bg-neutral-200 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100',
-    ghost: 'text-neutral-500',
+    primary: 'bg-accent text-accent-ink',
+    secondary: 'bg-surface-2 text-ink border border-line',
+    ghost: 'text-muted',
     reward: 'bg-amber-500 text-amber-950',
   }[variant]
 
@@ -390,8 +387,7 @@ function Stepper({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="size-14 rounded-full border border-neutral-300 text-2xl
-                 dark:border-neutral-700"
+      className="size-14 rounded-full border border-line text-2xl"
       aria-label={label === '+' ? 'More stamps' : 'Fewer stamps'}
     >
       {label}
@@ -402,7 +398,7 @@ function Stepper({ label, onClick }: { label: string; onClick: () => void }) {
 function ErrorNote({ error }: { error: string | null }) {
   if (!error) return null
   return (
-    <p className="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700
+    <p className="mt-5 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200
                   dark:bg-red-950/40 dark:text-red-300">
       {error}
     </p>

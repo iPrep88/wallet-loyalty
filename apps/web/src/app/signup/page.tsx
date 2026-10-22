@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Button, Card, Field, Logo, Notice, PageTitle, inputClass } from '@/components/ui'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -32,69 +33,43 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="mx-auto min-h-dvh max-w-sm px-6 py-12">
-      <h1 className="text-2xl font-semibold tracking-tight">Set up your stamp card</h1>
-      <p className="mt-2 text-sm text-neutral-500">
-        Takes about five minutes. Your first month is free and we do not ask for a card.
-      </p>
+    <main className="mx-auto flex min-h-dvh max-w-[26rem] flex-col justify-center px-5 py-10">
+      <Logo />
 
-      <form onSubmit={submit} className="mt-8 space-y-5">
-        <Field label="What is your shop called?" hint="This is what customers will see.">
-          <input
-            value={shopName} onChange={(e) => setShopName(e.target.value)}
-            placeholder="Bubble Tea Co" autoComplete="organization" required
-            className={inputClass}
-          />
-        </Field>
-        <Field label="Your email">
-          <input
-            type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email" required className={inputClass}
-          />
-        </Field>
-        <Field label="Pick a password" hint="At least 8 characters. Long beats complicated.">
-          <input
-            type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password" required className={inputClass}
-          />
-        </Field>
+      <div className="mt-8">
+        <PageTitle sub="Five minutes, and your first month is free. We do not ask for a card.">
+          Your stamp card,<br />in their wallet.
+        </PageTitle>
+      </div>
 
-        <button
-          type="submit" disabled={busy}
-          className="w-full rounded-xl bg-neutral-900 px-4 py-4 text-base font-semibold
-                     text-white transition disabled:opacity-50
-                     dark:bg-white dark:text-neutral-900"
-        >
-          {busy ? 'Creating your shop…' : 'Create my shop'}
-        </button>
+      <Card className="mt-7">
+        <form onSubmit={submit} className="space-y-5">
+          <Field label="What is your shop called?" hint="Customers see this on their card.">
+            <input value={shopName} onChange={(e) => setShopName(e.target.value)}
+                   placeholder="Bubble Tea Co" autoComplete="organization" required
+                   className={inputClass} />
+          </Field>
+          <Field label="Your email">
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                   autoComplete="email" required className={inputClass} />
+          </Field>
+          <Field label="Pick a password" hint="At least 8 characters. Long beats complicated.">
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                   autoComplete="new-password" required className={inputClass} />
+          </Field>
 
-        {error && (
-          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700
-                        dark:bg-red-950/40 dark:text-red-300">{error}</p>
-        )}
-      </form>
+          <Button type="submit" disabled={busy} full>
+            {busy ? 'Creating your shop…' : 'Create my shop'}
+          </Button>
 
-      <p className="mt-8 text-center text-sm text-neutral-500">
+          {error && <Notice tone="error">{error}</Notice>}
+        </form>
+      </Card>
+
+      <p className="mt-6 text-center text-[13.5px] text-muted">
         Already set up?{' '}
-        <Link href="/login" className="text-blue-600 hover:underline">Sign in</Link>
+        <Link href="/login" className="font-semibold text-link hover:underline">Sign in</Link>
       </p>
     </main>
-  )
-}
-
-const inputClass =
-  'mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 text-base ' +
-  'focus:border-neutral-900 focus:outline-none ' +
-  'dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-400'
-
-function Field(
-  { label, hint, children }: { label: string; hint?: string; children: React.ReactNode },
-) {
-  return (
-    <label className="block text-sm font-medium">
-      {label}
-      {children}
-      {hint && <span className="mt-1.5 block font-normal text-neutral-500">{hint}</span>}
-    </label>
   )
 }

@@ -1,8 +1,118 @@
 @import "tailwindcss";
 
-:root { color-scheme: light dark; }
+/* ---------------------------------------------------------------- brand
+   The owner-facing app wears these. Customer-facing pages — the join page
+   and the card itself — wear the SHOP's colours instead, and must never
+   inherit ours: the whole promise is that their card is theirs.
+*/
+:root {
+  --midnight:    #061525;
+  --deep-navy:   #0A2035;
+  --navy:        #12324D;
+  --ice-blue:    #8BC8FF;
+  --bright-blue: #5AAEFF;
+  --pale-ice:    #E8F4FF;
+  --snow:        #F8FAFC;
+  --white:       #FFFFFF;
+  --brand-ink:   #0B1B2B;
+  --slate:       #667789;
+  --border:      #DFE6EC;
+
+  /* Semantic layer — components only ever touch these, so one definition
+     here moves both themes at once. */
+  --page:        var(--snow);
+  --surface:     var(--white);
+  --surface-2:   var(--snow);
+  --raised:      0 1px 2px rgb(11 27 43 / 0.04), 0 8px 24px -12px rgb(11 27 43 / 0.12);
+  --ink:         var(--brand-ink);
+  --ink-muted:   var(--slate);
+  --ink-faint:   #93A1B0;
+  --line:        var(--border);
+  --line-soft:   #EDF2F6;
+  /* Ice Blue is a highlight, not a fill: on Snow it has nowhere near enough
+     contrast for a button. Solid things wear Navy; links wear a blue that
+     still reads as a link. In dark both roles go to Ice Blue, where it has
+     the contrast to carry them. */
+  --accent:      var(--navy);
+  --accent-ink:  var(--white);
+  --accent-soft: var(--pale-ice);
+  --link:        #1C6FC4;
+  --focus:       var(--bright-blue);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page:        var(--midnight);
+    --surface:     var(--deep-navy);
+    --surface-2:   var(--navy);
+    --raised:      0 1px 0 rgb(139 200 255 / 0.04), 0 16px 40px -24px rgb(0 0 0 / 0.8);
+    --ink:         #EAF2FA;
+    --ink-muted:   #8FA3B8;
+    --ink-faint:   #5E738A;
+    --line:        #1B3A58;
+    --line-soft:   #112B43;
+    --accent:      var(--ice-blue);
+    --accent-ink:  var(--midnight);
+    --accent-soft: var(--navy);
+    --link:        var(--ice-blue);
+  }
+}
+
+:root[data-theme="dark"] {
+  --page:        var(--midnight);
+  --surface:     var(--deep-navy);
+  --surface-2:   var(--navy);
+  --raised:      0 1px 0 rgb(139 200 255 / 0.04), 0 16px 40px -24px rgb(0 0 0 / 0.8);
+  --ink:         #EAF2FA;
+  --ink-muted:   #8FA3B8;
+  --ink-faint:   #5E738A;
+  --line:        #1B3A58;
+  --line-soft:   #112B43;
+  --accent:      var(--ice-blue);
+  --accent-ink:  var(--midnight);
+  --accent-soft: var(--navy);
+  --link:        var(--ice-blue);
+}
+
+/* Expose the semantic layer to Tailwind, so `bg-surface` and `text-muted`
+   resolve per theme without a dark: variant on every element. */
+@theme inline {
+  --color-page:        var(--page);
+  --color-surface:     var(--surface);
+  --color-surface-2:   var(--surface-2);
+  --color-ink:         var(--ink);
+  --color-muted:       var(--ink-muted);
+  --color-faint:       var(--ink-faint);
+  --color-line:        var(--line);
+  --color-line-soft:   var(--line-soft);
+  --color-accent:      var(--accent);
+  --color-accent-ink:  var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-link:        var(--link);
+}
+
+html, body { background: var(--page); }
 
 body {
+  color: var(--ink);
   -webkit-tap-highlight-color: transparent;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Numbers that sit in columns should line up. */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* One focus treatment, in the brand's own blue. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
