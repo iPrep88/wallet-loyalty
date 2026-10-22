@@ -1,6 +1,7 @@
 import { analyzeLogo } from '@wl/passes/logo'
 import { contrastRatio, ensureReadable, luminance, paletteFromAnalysis } from '@wl/passes/colors'
 import type { Palette } from '@wl/passes/colors'
+import sharp from 'sharp'
 import { safeFetch, normalizeUrl } from './safe-fetch'
 import { extractIcoPng } from './ico'
 
@@ -74,8 +75,10 @@ export async function lookupBrand(input: string): Promise<LookupResult> {
   // A square icon is a logo; og:image is usually a hero photograph. Treating
   // the two as the same thing is how you end up pasting a croissant where a
   // wordmark should be.
-  const logo = await firstImage(iconCandidates(html, base))
-  const photo = await firstImage(photoCandidates(html, base))
+  // A logo has to be big enough to be one. A photograph does not — og:image
+  // is a hero shot and is always large enough.
+  const logo = await bestImage(iconCandidates(html, base), true)
+  const photo = await bestImage(photoCandidates(html, base), false)
 
   const options = await buildOptions(logo, themeColor, Boolean(photo))
 
@@ -150,6 +153,8 @@ function iconCandidates(html: string, base: URL): string[] {
     .sort((a, b) => b.size - a.size)
     .map((x) => x.href)
 
+  // Everything, in no particular order — the choice is made by measuring the
+  // images, not by reading what the page claims about them.
   out.push(...withRel(/rel=["'][^"']*apple-touch-icon/i))
   out.push(...withRel(/rel=["'][^"']*\bicon\b/i))
   out.push('/favicon.ico')
@@ -198,30 +203,70 @@ function decodeDataUrl(url: string): { bytes: Buffer; type: string } | null {
   }
 }
 
-/** Tries each candidate until one is actually a usable image. */
-async function firstImage(urls: string[]): Promise<Buffer | null> {
+/**
+ * Below this, an icon is not a logo — it is a browser tab decoration, and
+ * stretching it across a card looks exactly like what it is.
+ */
+const MIN_LOGO_PIXELS = 64
+
+/**
+ * The best image among the candidates, measured rather than taken on trust.
+ *
+ * A page's `sizes` attribute is a claim, not a fact. The Union Hotel's site
+ * declares a 32x32, a 192x192, and an apple-touch-icon with no size at all —
+ * and that last one, which this used to prefer categorically, is 16 pixels
+ * across. Blown up to fill a card it was unusable, which is precisely what
+ * Ben saw.
+ *
+ * So: fetch the candidates, ask each image how big it actually is, take the
+ * largest, and if the best of them is still tiny, report no logo rather than
+ * hand back something blurry.
+ */
+async function bestImage(urls: string[], requireSize: boolean): Promise<Buffer | null> {
+  let best: { pixels: number; bytes: Buffer } | null = null
+
   for (const u of urls.slice(0, 5)) {
-    if (u.startsWith('data:')) {
-      const inline = decodeDataUrl(u)
-      if (inline) return inline.bytes
+    const bytes = await fetchImage(u)
+    if (!bytes) continue
+
+    let pixels = 0
+    try {
+      const meta = await sharp(bytes).metadata()
+      pixels = Math.min(meta.width ?? 0, meta.height ?? 0)
+      // An SVG has no intrinsic size worth comparing — it is vector, so it is
+      // always the best candidate available.
+      if (meta.format === 'svg') pixels = 4096
+    } catch {
       continue
     }
 
+    if (!best || pixels > best.pixels) best = { pixels, bytes }
+  }
+
+  if (!best) return null
+  if (requireSize && best.pixels < MIN_LOGO_PIXELS) return null
+  return best.bytes
+}
+
+/** One candidate, fetched and unwrapped. */
+async function fetchImage(u: string): Promise<Buffer | null> {
+  {
+    if (u.startsWith('data:')) {
+      return decodeDataUrl(u)?.bytes ?? null
+    }
+
     const res = await safeFetch(u)
-    if (!res.ok) continue
-    if (!res.contentType.startsWith('image/')) continue
-    if (res.body.byteLength < 200) continue   // a tracking pixel or an error page
+    if (!res.ok) return null
+    if (!res.contentType.startsWith('image/')) return null
+    if (res.body.byteLength < 200) return null   // a tracking pixel or an error page
 
     // A .ico is a container no image library will open, but a small shop's
     // site often has nothing else — so look inside for the PNG.
     if (res.contentType.includes('icon') || /\.ico(\?|$)/i.test(u)) {
-      const inner = extractIcoPng(res.body)
-      if (inner) return inner
-      continue
+      return extractIcoPng(res.body)
     }
     return res.body
   }
-  return null
 }
 
 /* -------------------------------------------------------------- options */

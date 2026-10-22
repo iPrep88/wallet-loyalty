@@ -56,7 +56,23 @@ export async function processUpload(
     // A logo exported with a wide margin arrives as a small mark adrift in a
     // big transparent box; trimming first means it lands on the card looking
     // deliberate rather than misaligned.
-    const source = kind === 'logo' ? await trimLogo(original) : original
+    // An SVG is vector and has no native resolution — the width in its header
+    // is a default, not a limit. Rasterising at that default and then refusing
+    // to enlarge produced a 16-pixel logo from a perfectly good vector mark,
+    // which is what made a real shop's card look broken. Render it large
+    // instead, by raising the density until it is.
+    const probe = await sharp(original).metadata().catch(() => null)
+    const target = kind === 'photo' ? 1600 : 960
+    const density = probe?.format === 'svg'
+      ? Math.min(2400, Math.max(72, Math.round(
+          72 * (target / Math.max(1, Math.min(probe.width ?? 1, probe.height ?? 1))))))
+      : undefined
+
+    const raster = density
+      ? await sharp(original, { density }).png().toBuffer()
+      : original
+
+    const source = kind === 'logo' ? await trimLogo(raster) : raster
 
     const pipeline = sharp(source, { limitInputPixels: MAX_INPUT_PIXELS })
       .rotate()   // honour the phone's orientation tag before we discard it

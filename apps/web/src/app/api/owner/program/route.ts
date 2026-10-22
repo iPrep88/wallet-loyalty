@@ -64,6 +64,8 @@ export async function PUT(req: Request) {
     if (v === undefined) continue
     if (!HEX.test(v)) return err('bad_request', 'Colours must look like #1A2B3C.')
     patch[key] = v.toUpperCase()
+    // They touched a colour; stop picking for them from here on.
+    patch.colors_chosen = true
   }
   if (input.stamps_required !== undefined) {
     const n = Math.floor(input.stamps_required)

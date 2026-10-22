@@ -108,6 +108,7 @@ export async function PUT(req: Request) {
   await query(
     `update programs
         set bg_color = $2, fg_color = $3, label_color = $4, card_style = $5,
+            colors_chosen = true,
             logo_url = coalesce($6, logo_url),
             photo_url = coalesce($7, photo_url),
             design_version = design_version + 1

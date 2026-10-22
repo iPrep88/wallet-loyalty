@@ -58,6 +58,19 @@ export async function POST(req: Request) {
   // transparent logo's dominant colour is its own ink, and using that as the
   // ground puts a blue logo on a blue card.
   const palette = paletteFromAnalysis(await analyzeLogo(normalized))
+
+  // Choosing colours for them is right the first time and wrong every time
+  // after. Once they have picked a palette themselves, a new logo offers its
+  // colours rather than taking over.
+  if (ctx.program.colors_chosen) {
+    await query(
+      `update programs set logo_url = $2, design_version = design_version + 1
+        where id = $1`,
+      [ctx.program.id, url],
+    )
+    return ok({ logo_url: url, palette, applied: false })
+  }
+
   await query(
     `update programs
         set logo_url = $2, bg_color = $3, fg_color = $4, label_color = $5,
@@ -65,5 +78,5 @@ export async function POST(req: Request) {
       where id = $1`,
     [ctx.program.id, url, palette.bg, palette.fg, palette.label],
   )
-  return ok({ logo_url: url, palette })
+  return ok({ logo_url: url, palette, applied: true })
 }

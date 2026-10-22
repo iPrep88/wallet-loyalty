@@ -71,6 +71,7 @@ export interface Program {
   back_instagram: string | null
   back_menu_url: string | null
   back_terms: string
+  colors_chosen: boolean
   design_version: number
   google_class_id: string | null
   created_at: Date
