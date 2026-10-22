@@ -18,7 +18,9 @@ import { isIP } from 'node:net'
  */
 
 const MAX_REDIRECTS = 4
-const TIMEOUT_MS = 6000
+// Small business sites are often slow — a shared host waking up, a page of
+// unoptimised images. Six seconds failed sites that would have answered.
+const TIMEOUT_MS = 12000
 const MAX_BYTES = 3 * 1024 * 1024
 
 export type SafeFetchError =
@@ -104,8 +106,13 @@ export async function safeFetch(rawUrl: string | URL): Promise<SafeFetchResult> 
         redirect: 'manual',
         signal: controller.signal,
         headers: {
-          'User-Agent': 'VizisBrandBot/1.0 (+https://loyalty.iprep.ca)',
-          Accept: 'text/html,image/*;q=0.9,*/*;q=0.5',
+          // Identifies itself, but as a browser-shaped client: a bare bot
+          // string is refused outright by a lot of small-business hosting
+          // and by the firewalls sitting in front of it.
+          'User-Agent':
+            'Mozilla/5.0 (compatible; VizisBrandBot/1.0; +https://loyalty.iprep.ca)',
+          Accept: 'text/html,application/xhtml+xml,image/*;q=0.9,*/*;q=0.5',
+          'Accept-Language': 'en-CA,en;q=0.9',
         },
       })
     } catch (e) {

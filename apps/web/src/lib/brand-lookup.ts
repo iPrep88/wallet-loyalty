@@ -42,8 +42,25 @@ export async function lookupBrand(input: string): Promise<LookupResult> {
   const url = normalizeUrl(input)
   if (!url) return { ok: false, message: 'That does not look like a web address.' }
 
-  const page = await safeFetch(url)
-  if (!page.ok) return { ok: false, message: page.message }
+  let page = await safeFetch(url)
+
+  // Plenty of small businesses answer on only one of apex or www, and the
+  // owner has no idea which — they just know their address. Try the other.
+  if (!page.ok && (page.error === 'unreachable' || page.error === 'bad_status')) {
+    const swapped = new URL(url.toString())
+    swapped.hostname = url.hostname.startsWith('www.')
+      ? url.hostname.slice(4)
+      : `www.${url.hostname}`
+    const second = await safeFetch(swapped)
+    if (second.ok) page = second
+  }
+
+  if (!page.ok) {
+    return {
+      ok: false,
+      message: `${page.message} You can skip this and upload your logo instead.`,
+    }
+  }
   if (!page.contentType.includes('html')) {
     return { ok: false, message: 'That address is not a web page.' }
   }

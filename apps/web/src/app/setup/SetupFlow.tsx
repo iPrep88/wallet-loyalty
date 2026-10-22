@@ -10,7 +10,7 @@ import {
 } from '@wl/shared/constants'
 import { REWARD_PRESETS, REWARD_MAX_LENGTH } from '@wl/shared/rewards'
 import { inputClass as input } from '@/components/ui'
-import { postForm, postJson } from '@/lib/post'
+import { postForm, postJson, putJson } from '@/lib/post'
 import CardPreview, { type PreviewProgram } from './CardPreview'
 import OptionCard from './OptionCard'
 
@@ -68,7 +68,7 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
     if (timer.current) clearTimeout(timer.current)
     const run = async () => {
       setSaving(true); setError(null)
-      const result = await postJson<{ program?: typeof initial }>(
+      const result = await putJson<{ program?: typeof initial }>(
         '/api/owner/program', patch,
       )
       setSaving(false)
@@ -110,12 +110,12 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
 
   async function applyOption(o: LookupOption) {
     setChosen(o.id); setSaving(true); setError(null)
-    const result = await postJson<{ program?: typeof initial }>('/api/owner/brand', {
+    const result = await putJson<{ program?: typeof initial }>('/api/owner/brand', {
       bg_color: o.bg_color, fg_color: o.fg_color, label_color: o.label_color,
       style: o.style,
       logo_url: lookup?.logo_url ?? null,
       photo_url: o.style === 'photo' ? lookup?.photo_url ?? null : null,
-    }, 'PUT')
+    })
     setSaving(false)
     if (!result.ok) { setError(result.message); return }
     if (result.data.program) setProgram((p) => ({ ...p, ...result.data.program }))
@@ -151,7 +151,7 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
     : `/j/${store.slug}`
 
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 py-8">
+    <main className="mx-auto min-h-dvh max-w-5xl px-5 py-8">
       {/* progress */}
       <div className="flex gap-1.5" aria-hidden>
         {STEPS.map((_, i) => (
@@ -164,19 +164,25 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
         {saving && <span className="ml-2 opacity-60">saving…</span>}
       </p>
 
-      {/* the card, always visible — it is the thing being decided */}
-      {step < 4 && (
-        <div className="mt-5">
+      {/* Two columns on a laptop with the card pinned: the card is the thing
+          being decided, and a change you have to scroll back up to see is a
+          change you cannot judge. */}
+      <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-12">
+      {step < 4 ? (
+        <div className="lg:sticky lg:top-6 lg:self-start">
           <CardPreview
             program={program}
             shopName={shopName || company.name}
             storeName={store.showName ? store.name : undefined}
             stamps={Math.min(3, program.stamps_required)}
           />
+          <p className="mt-3 hidden text-[12px] leading-snug text-muted lg:block">
+            This is your card. It updates as you change things.
+          </p>
         </div>
-      )}
+      ) : <div className="hidden lg:block" />}
 
-      <div className="mt-7">
+      <div className="mx-auto w-full max-w-md lg:mx-0 lg:mt-0">
         {step === 0 && (
           <Section title="Let us build your card"
                    subtitle="Paste your website and we will find your logo and colours. No website is fine too.">
@@ -463,11 +469,10 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
             </a>
           </Section>
         )}
-      </div>
 
       {error && (
-        <p className="mt-5 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-200
-                      dark:bg-red-950/40 dark:text-red-300">{error}</p>
+        <p className="mt-5 rounded-xl border border-red-300/50 bg-red-500/10 px-4 py-3
+                      text-sm text-red-700 dark:text-red-200">{error}</p>
       )}
 
       <div className="mt-8 flex gap-3">
@@ -483,6 +488,8 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
             {step === 3 ? 'Finish' : 'Next'}
           </button>
         )}
+        </div>
+      </div>
       </div>
     </main>
   )

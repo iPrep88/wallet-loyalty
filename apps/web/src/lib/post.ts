@@ -50,6 +50,19 @@ export async function postJson<T>(
   return { ok: true, data }
 }
 
+/**
+ * PUT, as its own function.
+ *
+ * The method used to be an optional argument defaulting to POST, and a call
+ * that needed PUT simply left it off — so every save in the setup flow went
+ * to an endpoint that does not accept POST and came back 405. Nothing about
+ * the call site looked wrong. Naming it means the method is visible where it
+ * is chosen.
+ */
+export function putJson<T>(url: string, body: unknown): Promise<PostResult<T>> {
+  return postJson<T>(url, body, 'PUT')
+}
+
 /** The same, for multipart uploads. */
 export async function postForm<T>(url: string, form: FormData): Promise<PostResult<T>> {
   let res: Response
