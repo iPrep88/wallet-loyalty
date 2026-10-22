@@ -12,6 +12,7 @@ import { REWARD_PRESETS, REWARD_MAX_LENGTH } from '@wl/shared/rewards'
 import { inputClass as input } from '@/components/ui'
 import { postForm, postJson } from '@/lib/post'
 import CardPreview, { type PreviewProgram } from './CardPreview'
+import OptionCard from './OptionCard'
 
 interface Props {
   company: { name: string; slug: string }
@@ -30,6 +31,20 @@ const STEPS = ['Your shop', 'Your card', 'The deal', 'Details', 'Done'] as const
 
 type Path = null | 'ready' | 'own'
 
+interface LookupOption {
+  id: string; name: string; blurb: string
+  style: 'minimal' | 'photo'
+  bg_color: string; fg_color: string; label_color: string
+}
+interface Lookup {
+  site_url: string
+  name: string | null
+  found_brand: boolean
+  logo_url: string | null
+  photo_url: string | null
+  options: LookupOption[]
+}
+
 export default function SetupFlow({ company, store, program: initial }: Props) {
   const [step, setStep] = useState(0)
   const [program, setProgram] = useState(initial)
@@ -38,6 +53,10 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
   const [customising, setCustomising] = useState(false)
   // null until they choose; a logo already uploaded means they chose 'own'.
   const [path, setPath] = useState<Path>(initial.logo_url ? 'own' : null)
+  const [website, setWebsite] = useState('')
+  const [looking, setLooking] = useState(false)
+  const [lookup, setLookup] = useState<Lookup | null>(null)
+  const [chosen, setChosen] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -66,6 +85,40 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
 
   function set<K extends keyof typeof program>(key: K, value: (typeof program)[K]) {
     setProgram((p) => ({ ...p, [key]: value }))
+  }
+
+  /**
+   * "Paste your website and we will build your card."
+   *
+   * Fetches their own site, finds the logo and colours, and comes back with
+   * finished cards. The owner never operates a colour picker to get here.
+   */
+  async function findBrand() {
+    if (!website.trim()) return
+    setLooking(true); setError(null)
+    const result = await postJson<Lookup>('/api/owner/brand', { url: website })
+    setLooking(false)
+    if (!result.ok) { setError(result.message); return }
+    setLookup(result.data)
+    setPath('own')
+    if (result.data.name && !shopName.trim()) {
+      setShopName(result.data.name)
+      save({ shop_name: result.data.name })
+    }
+    setStep(1)
+  }
+
+  async function applyOption(o: LookupOption) {
+    setChosen(o.id); setSaving(true); setError(null)
+    const result = await postJson<{ program?: typeof initial }>('/api/owner/brand', {
+      bg_color: o.bg_color, fg_color: o.fg_color, label_color: o.label_color,
+      style: o.style,
+      logo_url: lookup?.logo_url ?? null,
+      photo_url: o.style === 'photo' ? lookup?.photo_url ?? null : null,
+    }, 'PUT')
+    setSaving(false)
+    if (!result.ok) { setError(result.message); return }
+    if (result.data.program) setProgram((p) => ({ ...p, ...result.data.program }))
   }
 
   async function uploadImage(file: File, kind: 'logo' | 'photo' = 'logo') {
@@ -125,17 +178,61 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
 
       <div className="mt-7">
         {step === 0 && (
-          <Section title="What is your shop called?"
-                   subtitle="Customers see this on their card, so use the name on your sign.">
+          <Section title="Let us build your card"
+                   subtitle="Paste your website and we will find your logo and colours. No website is fine too.">
+            <div className="flex gap-2">
+              <input
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void findBrand() }}
+                placeholder="yourshop.ca" inputMode="url" autoCapitalize="off"
+                className={`${input} flex-1`}
+              />
+              <button onClick={() => void findBrand()} disabled={looking || !website.trim()}
+                className="mt-1.5 flex-none rounded-xl bg-accent px-4 text-[14px] font-semibold
+                           text-accent-ink transition-colors disabled:opacity-45">
+                {looking ? 'Looking…' : 'Find'}
+              </button>
+            </div>
+
+            <p className="mt-6 text-sm font-semibold">What is your shop called?</p>
             <input
               value={shopName}
               onChange={(e) => { setShopName(e.target.value); save({ shop_name: e.target.value }) }}
               placeholder="Bubble Tea Co" className={input}
             />
+            <p className="mt-1.5 text-[12.5px] text-muted">
+              Customers see this on their card, so use the name on your sign.
+            </p>
           </Section>
         )}
 
-        {step === 1 && path === null && (
+        {step === 1 && lookup && lookup.options.length > 0 && (
+          <Section title={lookup.found_brand ? 'Built from your website' : 'Pick a card'}
+                   subtitle={lookup.found_brand
+                     ? 'Pick one. You can change any of it afterwards.'
+                     : `We could not find a logo on ${lookup.site_url}, so these are ours. Upload a logo below and we will rebuild them around it.`}>
+            <div className="space-y-3">
+              {lookup.options.map((o) => (
+                <OptionCard key={o.id}
+                  name={o.name} blurb={o.blurb}
+                  bg={o.bg_color} fg={o.fg_color} label={o.label_color}
+                  shopName={shopName}
+                  photoUrl={lookup.photo_url}
+                  isPhoto={o.style === 'photo'}
+                  selected={chosen === o.id}
+                  onSelect={() => void applyOption(o)} />
+              ))}
+            </div>
+
+            <button onClick={() => { setLookup(null); setPath(null) }}
+                    className="mt-5 text-sm text-link hover:underline">
+              None of these — let me start over
+            </button>
+          </Section>
+        )}
+
+        {step === 1 && !lookup && path === null && (
           <Section title="How should your card look?">
             <div className="space-y-3">
               <button onClick={() => setPath('ready')}

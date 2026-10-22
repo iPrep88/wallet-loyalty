@@ -14,11 +14,12 @@ export type PostResult<T> =
 export async function postJson<T>(
   url: string,
   body: unknown,
+  method: 'POST' | 'PUT' = 'POST',
 ): Promise<PostResult<T>> {
   let res: Response
   try {
     res = await fetch(url, {
-      method: 'POST',
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
