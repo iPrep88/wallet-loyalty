@@ -20,7 +20,27 @@ export const APPLE_LOGO = { width: 160, height: 50 } as const
 export const APPLE_ICON = { width: 29, height: 29 } as const
 
 /** Offered in onboarding. 'custom' means the owner uploaded their own. */
-export const STAMP_ICONS = ['cup', 'boba', 'bean', 'star', 'heart', 'circle'] as const
+/**
+ * Offered at setup. Ordered so a shop finds itself near the front: the plain
+ * circle first because it suits anyone and looks the most considered, then the
+ * trades this is actually sold to.
+ */
+export const STAMP_ICONS = [
+  'circle', 'boba', 'cup', 'bean', 'bowl', 'croissant', 'scoop', 'star', 'heart',
+] as const
+
+/** What to call each one to someone who has never thought about it. */
+export const STAMP_ICON_LABELS: Record<(typeof STAMP_ICONS)[number], string> = {
+  circle:    'Dot',
+  boba:      'Boba cup',
+  cup:       'Cup',
+  bean:      'Coffee bean',
+  bowl:      'Noodle bowl',
+  croissant: 'Croissant',
+  scoop:     'Ice cream',
+  star:      'Star',
+  heart:     'Heart',
+}
 
 /**
  * Suggested in setup, but owners pick any number in this range: a $4 coffee

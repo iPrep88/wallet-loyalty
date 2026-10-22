@@ -25,3 +25,13 @@ export function headerValue(stamps: number, stampsRequired: number): string {
   // "REWARD READY" truncates in the header field; "READY" does not.
   return stamps >= stampsRequired ? 'READY 🎉' : `${stamps} / ${stampsRequired}`
 }
+
+
+/**
+ * Printed under the QR on the customer's card.
+ *
+ * Goes in the pass's `barcode.altText`, which the operating system draws
+ * beneath the code — so a customer holding up their phone and a staff member
+ * looking at it both know what it is for without being told.
+ */
+export const BARCODE_CAPTION = 'Show this to staff'

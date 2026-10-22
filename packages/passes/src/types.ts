@@ -1,4 +1,6 @@
-export type StampIcon = 'cup' | 'boba' | 'bean' | 'star' | 'heart' | 'circle' | 'custom'
+export type StampIcon =
+  | 'circle' | 'boba' | 'cup' | 'bean' | 'bowl' | 'croissant' | 'scoop'
+  | 'star' | 'heart' | 'custom'
 export type CardState = 'collecting' | 'reward_ready'
 export type CardStyle = 'minimal' | 'photo' | 'ai'
 

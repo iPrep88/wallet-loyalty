@@ -22,6 +22,22 @@ const PATHS: Record<Exclude<StampIcon, 'custom'>, string> = {
     'M22 20h56l-3 10H25zM27 34h46l-6 54a6 6 0 0 1-6 5H39a6 6 0 0 1-6-5z'
     + 'M40 74a5 5 0 1 0 0.1 0zM54 78a5 5 0 1 0 0.1 0zM47 66a5 5 0 1 0 0.1 0z',
 
+  // A noodle bowl, seen from the side: a wide bowl with steam above it.
+  bowl:
+    'M8 42h84c0 28-19 48-42 48S8 70 8 42z'
+    + 'M30 30c-6-7-6-13 0-20M50 26c-6-7-6-13 0-20M70 30c-6-7-6-13 0-20',
+
+  // A croissant: a thick crescent with pointed tips. Fine detail is wasted
+  // at 25 pixels across, so this is the silhouette and nothing else — the
+  // first attempt had horns and curls and read as a moustache.
+  croissant:
+    'M14 72C14 36 32 16 50 16s36 20 36 56c-9-15-21-23-36-23s-27 8-36 23z',
+
+  // A scoop in a cone.
+  scoop:
+    'M50 12a26 26 0 0 1 26 26H24a26 26 0 0 1 26-26z'
+    + 'M26 44h48L50 94z',
+
   // A coffee bean: ellipse with the centre crease.
   bean:
     'M50 8c20 0 36 19 36 42S70 92 50 92 14 73 14 50 30 8 50 8z'

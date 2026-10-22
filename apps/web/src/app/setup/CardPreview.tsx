@@ -82,16 +82,20 @@ export default function CardPreview({
         <div className="truncate text-[14px] font-medium">{program.reward_text}</div>
       </div>
 
-      {/* The QR, which is why the band above it is as short as it is. */}
-      <div className="flex justify-center pb-5">
+      {/* The QR, which is why the band above it is as short as it is. The
+          caption is the pass's barcode altText — Apple draws it under the code
+          itself, so staff and customer both know what the thing is for. */}
+      <div className="flex flex-col items-center gap-1.5 pb-5">
         <div className="size-[72px] rounded-[4px] bg-white p-1.5">
           <div className="size-full"
                style={{
-                 backgroundImage:
-                   'repeating-conic-gradient(#111 0% 25%, #fff 0% 50%)',
+                 backgroundImage: 'repeating-conic-gradient(#111 0% 25%, #fff 0% 50%)',
                  backgroundSize: '12px 12px',
                }} />
         </div>
+        <span className="text-[8.5px]" style={{ color: program.label_color }}>
+          Show this to staff
+        </span>
       </div>
     </div>
   )
