@@ -28,7 +28,7 @@ async function main() {
     `insert into programs
        (company_id, stamps_required, reward_text, reward_value_cents,
         card_style, stamp_icon, bg_color, fg_color, label_color, back_hours)
-     values ($1, 10, 'Free boba', 700, 'stamps', 'boba',
+     values ($1, 10, 'Free boba', 700, 'minimal', 'boba',
              '#2B1B4A', '#F7D8E8', '#B9A3D6', 'Mon–Sun 11am–9pm')`,
     [company!.id],
   )
