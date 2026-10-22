@@ -37,7 +37,12 @@ export async function renderStrip(req: StripRequest): Promise<Buffer> {
 
     return sharp(base)
       .composite([{ input: Buffer.from(photoScrim(req, w, h)), blend: 'over' }])
-      .png({ compressionLevel: 9 })
+      // Apple requires PNG in a pass, and a photograph as a plain PNG is
+      // enormous — 684KB at @3x in testing, where a whole pass should be a
+      // fraction of that. Reducing to 128 colours brings it under 120KB and
+      // is invisible at card size: the scrim has already flattened the
+      // picture, so there is little left for a wider palette to describe.
+      .png({ compressionLevel: 9, palette: true, colours: 128 })
       .toBuffer()
   }
 

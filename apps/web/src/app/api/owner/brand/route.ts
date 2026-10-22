@@ -1,8 +1,7 @@
-import sharp from 'sharp'
 import { one, query } from '@wl/db'
 import { ownerContext } from '@/lib/owner-data'
 import { lookupBrand } from '@/lib/brand-lookup'
-import { trimLogo } from '@wl/passes/logo'
+import { processUpload } from '@/lib/images'
 import { body, err, ok } from '@/lib/http'
 
 export const dynamic = 'force-dynamic'
@@ -68,24 +67,17 @@ async function store(
   kind: 'logo' | 'photo',
   bytes: Buffer,
 ): Promise<string | null> {
-  try {
-    const source = kind === 'logo' ? await trimLogo(bytes) : bytes
-    const { data, info } = await sharp(source).rotate().resize(
-      kind === 'photo'
-        ? { width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }
-        : { width: 960, height: 960, fit: 'inside', withoutEnlargement: true },
-    ).png().toBuffer({ resolveWithObject: true })
+  const processed = await processUpload(bytes, kind)
+  // An image we cannot read is a missing option, not a failed lookup.
+  if (!processed.ok) return null
 
-    const asset = await one<{ id: string }>(
-      `insert into assets (company_id, kind, mime, bytes, width, height)
-       values ($1, $2, 'image/png', $3, $4, $5) returning id`,
-      [companyId, kind, data, info.width, info.height],
-    )
-    return asset ? `/api/asset/${asset.id}` : null
-  } catch {
-    // A logo we cannot read is a missing option, not a failed lookup.
-    return null
-  }
+  const { bytes: data, mime, width, height } = processed.image
+  const asset = await one<{ id: string }>(
+    `insert into assets (company_id, kind, mime, bytes, width, height)
+     values ($1, $2, $3, $4, $5, $6) returning id`,
+    [companyId, kind, mime, data, width, height],
+  )
+  return asset ? `/api/asset/${asset.id}` : null
 }
 
 /** Applies the option the owner chose. */

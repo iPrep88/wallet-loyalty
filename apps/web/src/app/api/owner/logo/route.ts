@@ -1,14 +1,12 @@
-import sharp from 'sharp'
 import { one, query } from '@wl/db'
 import { ownerContext } from '@/lib/owner-data'
 import { paletteFromAnalysis } from '@wl/passes/colors'
-import { analyzeLogo, trimLogo } from '@wl/passes/logo'
+import { analyzeLogo } from '@wl/passes/logo'
+import { MAX_UPLOAD_BYTES, processUpload } from '@/lib/images'
 import { err, ok } from '@/lib/http'
 
 export const dynamic = 'force-dynamic'
 
-const MAX_BYTES = 2 * 1024 * 1024
-const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp']
 
 /**
  * Takes a shop's logo, stores it, and reads a palette out of it.
@@ -29,43 +27,18 @@ export async function POST(req: Request) {
   }
   const file = form?.get('logo') ?? form?.get('image')
   if (!(file instanceof File)) return err('bad_request', 'No image was uploaded.')
-  if (file.size > MAX_BYTES) {
-    return err('bad_request', 'That image is over 2 MB — try a smaller one.')
-  }
-
-  const original = Buffer.from(await file.arrayBuffer())
-
-  let normalized: Buffer
-  let width: number | undefined
-  let height: number | undefined
-  try {
-    // Normalise to PNG and cap the size. A phone photo of a logo is often
-    // 4000px wide, which is pointless on a card 160 points across.
-    // A photograph is stored large enough to crop from at render time; the
-    // owner never picks a crop, because the whole point is that they are not
-    // doing the design.
-    //
-    // A logo is trimmed first: one exported with a wide margin otherwise
-    // arrives as a small mark adrift in a transparent box, and lands on the
-    // card looking misaligned rather than small.
-    const source = kind === 'photo' ? original : await trimLogo(original)
-    const { data, info } = await sharp(source).rotate().resize(
-      kind === 'photo'
-        ? { width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }
-        : { width: 960, height: 960, fit: 'inside', withoutEnlargement: true },
-    ).png().toBuffer({ resolveWithObject: true })
-    normalized = data
-    width = info.width
-    height = info.height
-  } catch {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return err('bad_request',
-      `That file could not be read as an image. ${ACCEPTED.join(', ')} work best.`)
+      `That image is over ${Math.round(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`)
   }
 
+  const processed = await processUpload(Buffer.from(await file.arrayBuffer()), kind)
+  if (!processed.ok) return err('bad_request', processed.message)
+  const { bytes: normalized, mime, width, height } = processed.image
   const asset = await one<{ id: string }>(
     `insert into assets (company_id, kind, mime, bytes, width, height)
-     values ($1, $2, 'image/png', $3, $4, $5) returning id`,
-    [ctx.company.id, kind, normalized, width ?? null, height ?? null],
+     values ($1, $2, $3, $4, $5, $6) returning id`,
+    [ctx.company.id, kind, mime, normalized, width, height],
   )
   const url = `/api/asset/${asset!.id}`
 
