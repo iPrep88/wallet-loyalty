@@ -37,10 +37,20 @@ Then:
 pnpm install && pnpm db:migrate && pnpm db:seed && pnpm dev
 ```
 
-Open http://localhost:3000 — it lists the demo shop with links to its join page
-and its scanner.
+Open http://localhost:3000. That is the marketing page; the useful links for
+development are at **http://localhost:3000/dev**, which lists every seeded shop
+with its join page and scanner.
 
-**Demo shop:** Bubble Tea Co · staff PINs `1234` (Amy) and `5678` (Ken).
+**Seeded demo:**
+
+| | |
+|---|---|
+| Owner sign-in | `demo@loyalty.test` / `demo1234` |
+| Shop | Bubble Tea Co, with two locations |
+| Staff PINs | `1234` (Amy) and `5678` (Ken), at both locations |
+
+On Linux, swap the Homebrew line for your package manager's Postgres 16+ and
+Node 20+; nothing else differs.
 
 ### Trying the loop by hand
 
@@ -53,6 +63,32 @@ and its scanner.
 
 The scanner's camera works in Chrome. Safari does not support the browser
 barcode API, so there the token field is the way in.
+
+---
+
+## Working on this with someone else
+
+Everyone runs their own database and their own `.env`. Nothing is shared
+between developers, and nobody needs anything from the production server to
+work on the code.
+
+Two things to know before you push:
+
+**Migrations are append-only once they have run anywhere.** Editing one that
+has already been applied makes every other database silently disagree with
+yours. `pnpm db:migrate` refuses to run when it spots that and tells you which
+file. Before launch the fix is `pnpm db:reset`; after launch it is a new
+migration.
+
+**Your `QR_TOKEN_SECRET` is yours.** Cards signed on your machine will not
+scan anywhere else, and that is correct — it is what stops a card from one
+environment working in another.
+
+### Deploying
+
+Production is a server that also runs an unrelated business, so deploys do not
+happen from a laptop. Pushing to `main` is as far as a developer goes; the
+deploy is run separately by whoever holds server access.
 
 ---
 
