@@ -1,7 +1,8 @@
 import sharp from 'sharp'
 import { one, query } from '@wl/db'
 import { ownerContext } from '@/lib/owner-data'
-import { ensureReadable, paletteFromLogo } from '@wl/passes/colors'
+import { paletteFromAnalysis } from '@wl/passes/colors'
+import { analyzeLogo, trimLogo } from '@wl/passes/logo'
 import { err, ok } from '@/lib/http'
 
 export const dynamic = 'force-dynamic'
@@ -22,10 +23,7 @@ export async function POST(req: Request) {
   if (!ctx) return err('bad_pin', 'Please sign in.')
 
   const form = await req.formData().catch(() => null)
-  const kind = String(form?.get('kind') ?? 'logo')
-  if (kind !== 'logo' && kind !== 'band') {
-    return err('bad_request', 'Unknown image kind.')
-  }
+  const kind = 'logo'
   const file = form?.get('logo') ?? form?.get('image')
   if (!(file instanceof File)) return err('bad_request', 'No image was uploaded.')
   if (file.size > MAX_BYTES) {
@@ -40,16 +38,13 @@ export async function POST(req: Request) {
   try {
     // Normalise to PNG and cap the size. A phone photo of a logo is often
     // 4000px wide, which is pointless on a card 160 points across.
-    // A logo keeps its shape; band artwork is cropped to the card's band, so
-    // there is no point storing more than that.
-    const pipeline = kind === 'band'
-      ? sharp(original).rotate().resize({
-          width: 1125, height: 294, fit: 'cover', position: 'centre',
-        }).png()
-      : sharp(original).rotate().resize({
-          width: 960, height: 960, fit: 'inside', withoutEnlargement: true,
-        }).png()
-    const { data, info } = await pipeline.toBuffer({ resolveWithObject: true })
+    // Trim first: a logo exported with a wide margin otherwise arrives as a
+    // small mark adrift in a big transparent box, and lands on the card
+    // looking misaligned rather than small.
+    const trimmed = await trimLogo(original)
+    const { data, info } = await sharp(trimmed).rotate().resize({
+      width: 960, height: 960, fit: 'inside', withoutEnlargement: true,
+    }).png().toBuffer({ resolveWithObject: true })
     normalized = data
     width = info.width
     height = info.height
@@ -65,18 +60,10 @@ export async function POST(req: Request) {
   )
   const url = `/api/asset/${asset!.id}`
 
-  if (kind === 'band') {
-    await query(
-      `update programs set band_image_url = $2, design_version = design_version + 1
-        where id = $1`,
-      [ctx.program.id, url],
-    )
-    return ok({ band_image_url: url })
-  }
-
-  // Only a logo sets the palette — band artwork is a backdrop, and taking the
-  // card's colours from a photograph would wreck the contrast the logo earned.
-  const palette = ensureReadable(await paletteFromLogo(normalized))
+  // The brand colour becomes the card's ACCENT, never its background — a
+  // transparent logo's dominant colour is its own ink, and using that as the
+  // ground puts a blue logo on a blue card.
+  const palette = paletteFromAnalysis(await analyzeLogo(normalized))
   await query(
     `update programs
         set logo_url = $2, bg_color = $3, fg_color = $4, label_color = $5,

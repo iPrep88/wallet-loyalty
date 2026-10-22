@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // pulls node:crypto into whatever bundle touches it — and this is a client
 // component.
 import {
-  CARD_STYLES, STAMP_ICONS,
+  CARD_STYLES, STAMP_ICONS, CARD_TEMPLATES,
   STAMPS_REQUIRED_SUGGESTED, STAMPS_REQUIRED_MIN, STAMPS_REQUIRED_MAX,
 } from '@wl/shared/constants'
 import { REWARD_PRESETS, REWARD_MAX_LENGTH } from '@wl/shared/rewards'
@@ -15,7 +15,6 @@ interface Props {
   company: { name: string; slug: string }
   store: { name: string; slug: string; address: string }
   program: PreviewProgram & {
-    band_image_url: string | null
     stamp_icon: string
     reward_value_cents: number | null
     back_hours: string | null
@@ -26,12 +25,16 @@ interface Props {
 
 const STEPS = ['Your shop', 'Your card', 'The deal', 'Details', 'Done'] as const
 
+type Path = null | 'ready' | 'own'
+
 export default function SetupFlow({ company, store, program: initial }: Props) {
   const [step, setStep] = useState(0)
   const [program, setProgram] = useState(initial)
   const [shopName, setShopName] = useState(company.name)
   const [storeAddress, setStoreAddress] = useState(store.address)
   const [customising, setCustomising] = useState(false)
+  // null until they choose; a logo already uploaded means they chose 'own'.
+  const [path, setPath] = useState<Path>(initial.logo_url ? 'own' : null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
@@ -70,25 +73,22 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
     setProgram((p) => ({ ...p, [key]: value }))
   }
 
-  async function uploadImage(file: File, kind: 'logo' | 'band' = 'logo') {
+  async function uploadImage(file: File) {
     setUploading(true); setError(null)
     try {
       const form = new FormData()
       form.append('logo', file)
-      form.append('kind', kind)
       const res = await fetch('/api/owner/logo', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok || !data.ok) { setError(data.message ?? 'Could not read that image.'); return }
-      setProgram((p) => kind === 'band'
-        ? { ...p, band_image_url: data.band_image_url, design_version: p.design_version + 1 }
-        : {
-            ...p,
-            logo_url: data.logo_url,
-            bg_color: data.palette.bg,
-            fg_color: data.palette.fg,
-            label_color: data.palette.label,
-            design_version: p.design_version + 1,
-          })
+      setProgram((p) => ({
+        ...p,
+        logo_url: data.logo_url,
+        bg_color: data.palette.bg,
+        fg_color: data.palette.fg,
+        label_color: data.palette.label,
+        design_version: p.design_version + 1,
+      }))
     } catch {
       setError('Upload failed. Please try again.')
     } finally {
@@ -128,95 +128,121 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
 
       <div className="mt-7">
         {step === 0 && (
-          <Section title="What is your shop called?">
+          <Section title="What is your shop called?"
+                   subtitle="Customers see this on their card, so use the name on your sign.">
             <input
               value={shopName}
               onChange={(e) => { setShopName(e.target.value); save({ shop_name: e.target.value }) }}
               placeholder="Bubble Tea Co" className={input}
             />
-            <p className="mt-5 text-sm font-medium">Your logo</p>
-            <p className="mt-1 text-[13px] text-neutral-500">
-              We will pull your colours out of it. You can change them after.
-            </p>
-            <label className="mt-3 flex cursor-pointer items-center justify-center gap-2
+          </Section>
+        )}
+
+        {step === 1 && path === null && (
+          <Section title="How should your card look?">
+            <div className="space-y-3">
+              <button onClick={() => setPath('ready')}
+                className="w-full rounded-2xl border border-neutral-200 p-4 text-left
+                           transition hover:border-neutral-900 dark:border-neutral-800
+                           dark:hover:border-white">
+                <span className="block text-[15px] font-semibold">Use a ready-made design</span>
+                <span className="mt-1 block text-[13px] leading-snug text-neutral-500">
+                  Pick one of six and you are done. Your shop name goes on the front, so
+                  customers can tell it from every other card in their wallet.
+                </span>
+                <div className="mt-3 flex gap-1.5">
+                  {CARD_TEMPLATES.map((t) => (
+                    <span key={t.id} className="h-7 flex-1 rounded-md ring-1 ring-black/10"
+                          style={{ backgroundColor: t.bg }} />
+                  ))}
+                </div>
+              </button>
+
+              <button onClick={() => setPath('own')}
+                className="w-full rounded-2xl border border-neutral-200 p-4 text-left
+                           transition hover:border-neutral-900 dark:border-neutral-800
+                           dark:hover:border-white">
+                <span className="block text-[15px] font-semibold">Design it myself</span>
+                <span className="mt-1 block text-[13px] leading-snug text-neutral-500">
+                  Upload your logo and we build the card around it. You can change any
+                  colour afterwards.
+                </span>
+              </button>
+            </div>
+          </Section>
+        )}
+
+        {step === 1 && path === 'ready' && (
+          <Section title="Pick a card">
+            <div className="grid grid-cols-2 gap-2.5">
+              {CARD_TEMPLATES.map((t) => {
+                const chosen = program.bg_color.toUpperCase() === t.bg
+                return (
+                  <button key={t.id}
+                    onClick={() => {
+                      set('bg_color', t.bg); set('fg_color', t.fg); set('label_color', t.label)
+                      save({ bg_color: t.bg, fg_color: t.fg, label_color: t.label }, true)
+                    }}
+                    className={`overflow-hidden rounded-xl border text-left transition ${
+                      chosen ? 'border-neutral-900 dark:border-white'
+                             : 'border-neutral-200 dark:border-neutral-800'}`}>
+                    <span className="flex h-16 items-center justify-center"
+                          style={{ backgroundColor: t.bg, color: t.fg }}>
+                      <span className="text-[13px] font-semibold">{shopName || 'Your shop'}</span>
+                    </span>
+                    <span className="block px-2.5 py-2 text-[12px] font-medium">{t.name}</span>
+                  </button>
+                )
+              })}
+            </div>
+            <StylePicker program={program} set={set} save={save} />
+            <button onClick={() => setPath(null)}
+                    className="mt-5 text-sm text-blue-600 hover:underline">
+              Back to the two options
+            </button>
+          </Section>
+        )}
+
+        {step === 1 && path === 'own' && (
+          <Section title="Your logo"
+                   subtitle="We read your colours out of it and build the card so your logo stays visible.">
+            <label className="flex cursor-pointer items-center justify-center gap-2
                               rounded-xl border border-dashed border-neutral-300 px-4 py-6
-                              text-sm text-neutral-600 dark:border-neutral-700 dark:text-neutral-400">
+                              text-sm text-neutral-600 dark:border-neutral-700
+                              dark:text-neutral-400">
               <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadImage(f) }} />
               {uploading ? 'Reading your logo…'
                 : program.logo_url ? 'Choose a different logo' : 'Upload a logo'}
             </label>
-          </Section>
-        )}
 
-        {step === 1 && (
-          <Section title="Pick a look">
-            <div className="grid grid-cols-2 gap-2.5">
-              {CARD_STYLES.map((s) => (
-                <button key={s.id}
-                  onClick={() => { set('card_style', s.id); save({ card_style: s.id }, true) }}
-                  className={`rounded-xl border p-3 text-left transition ${
-                    program.card_style === s.id
-                      ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900'
-                      : 'border-neutral-200 dark:border-neutral-800'}`}>
-                  <span className="block text-sm font-medium">{s.name}</span>
-                  <span className="mt-0.5 block text-[12px] leading-snug text-neutral-500">
-                    {s.blurb}
-                  </span>
-                </button>
-              ))}
-            </div>
-
-            {program.card_style === 'band' && (
-              <label className="mt-4 flex cursor-pointer items-center justify-center gap-2
-                                rounded-xl border border-dashed border-neutral-300 px-4 py-5
-                                text-sm text-neutral-600 dark:border-neutral-700
-                                dark:text-neutral-400">
-                <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                       onChange={(e) => { const f = e.target.files?.[0]
-                                          if (f) void uploadImage(f, 'band') }} />
-                {uploading ? 'Reading your image…'
-                  : program.band_image_url ? 'Choose a different image'
-                  : 'Upload your band image — until you do, the card shows stamps'}
-              </label>
-            )}
+            <StylePicker program={program} set={set} save={save} />
 
             <button onClick={() => setCustomising((v) => !v)}
                     className="mt-5 text-sm text-blue-600 hover:underline">
-              {customising ? 'Hide' : 'Customise'} colours and stamp
+              {customising ? 'Hide' : 'Change'} the colours
             </button>
 
             {customising && (
               <div className="mt-4 space-y-4 rounded-xl bg-neutral-50 p-4 dark:bg-neutral-900">
                 <div className="flex flex-wrap gap-4">
-                  {([['bg_color','Background'],['fg_color','Text'],['label_color','Labels']] as const)
+                  {([['bg_color','Card'],['fg_color','Text'],['label_color','Labels']] as const)
                     .map(([key, label]) => (
                     <label key={key} className="text-[13px]">
                       <span className="block text-neutral-500">{label}</span>
                       <input type="color" value={program[key]}
-                        onChange={(e) => { set(key, e.target.value.toUpperCase());
+                        onChange={(e) => { set(key, e.target.value.toUpperCase())
                                            save({ [key]: e.target.value.toUpperCase() }) }}
                         className="mt-1 h-9 w-16 cursor-pointer rounded border-0 bg-transparent p-0" />
                     </label>
                   ))}
                 </div>
-                {program.card_style === 'stamps' && (
-                  <div>
-                    <span className="block text-[13px] text-neutral-500">Stamp</span>
-                    <div className="mt-1.5 flex flex-wrap gap-1.5">
-                      {STAMP_ICONS.map((icon) => (
-                        <button key={icon}
-                          onClick={() => { set('stamp_icon', icon); save({ stamp_icon: icon }, true) }}
-                          className={`rounded-lg border px-2.5 py-1.5 text-[13px] capitalize ${
-                            program.stamp_icon === icon
-                              ? 'border-neutral-900 dark:border-white'
-                              : 'border-neutral-200 dark:border-neutral-700'}`}>
-                          {icon}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <p className="text-[12px] text-neutral-500">
+                  Or start from a ready-made one —{' '}
+                  <button onClick={() => setPath('ready')} className="text-blue-600 hover:underline">
+                    see the six
+                  </button>.
+                </p>
               </div>
             )}
           </Section>
@@ -369,6 +395,52 @@ const input =
   'mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 text-base ' +
   'focus:border-neutral-900 focus:outline-none ' +
   'dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-400'
+
+function StylePicker(
+  { program, set, save }: {
+    program: { card_style: string; stamp_icon: string }
+    set: (k: never, v: never) => void
+    save: (patch: Record<string, unknown>, immediate?: boolean) => void
+  },
+) {
+  return (
+    <>
+      <p className="mt-6 text-sm font-medium">How the stamps show</p>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        {CARD_STYLES.map((st) => (
+          <button key={st.id}
+            onClick={() => { (set as (k: string, v: string) => void)('card_style', st.id)
+                             save({ card_style: st.id }, true) }}
+            className={`rounded-xl border p-2.5 text-left transition ${
+              program.card_style === st.id
+                ? 'border-neutral-900 dark:border-white'
+                : 'border-neutral-200 dark:border-neutral-800'}`}>
+            <span className="block text-[13px] font-medium">{st.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {program.card_style === 'stamps' && (
+        <>
+          <p className="mt-4 text-sm font-medium">Stamp</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {STAMP_ICONS.map((icon) => (
+              <button key={icon}
+                onClick={() => { (set as (k: string, v: string) => void)('stamp_icon', icon)
+                                 save({ stamp_icon: icon }, true) }}
+                className={`rounded-lg border px-2.5 py-1.5 text-[13px] capitalize ${
+                  program.stamp_icon === icon
+                    ? 'border-neutral-900 dark:border-white'
+                    : 'border-neutral-200 dark:border-neutral-700'}`}>
+                {icon}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  )
+}
 
 function Section(
   { title, subtitle, children }:

@@ -3,7 +3,7 @@ import { iconPath } from './stamp-icons'
 import type { StripRequest } from './types'
 
 /**
- * Renders the band across the card, in one of four styles.
+ * Renders the band across the card, in one of three styles.
  *
  * Deliberately text-free. Adding a word would mean shipping a font: image text
  * is drawn with whatever fonts the host happens to have, and a serverless
@@ -15,42 +15,8 @@ import type { StripRequest } from './types'
  * as a clear flip at a glance and needs no glyphs.
  */
 export async function renderStrip(req: StripRequest): Promise<Buffer> {
-  const w = req.width * (req.scale ?? 1)
-  const h = req.height * (req.scale ?? 1)
-
-  // The 'band' style is the owner's own artwork behind a tint. Without an
-  // image there is nothing to show, so it falls back to the stamp grid rather
-  // than rendering an empty colour block that looks like a bug.
-  const useBand = req.style === 'band' && req.bandImage
-  const effective: StripRequest = useBand ? req : {
-    ...req,
-    style: req.style === 'band' ? 'stamps' : req.style,
-  }
-
-  if (!useBand) {
-    return sharp(Buffer.from(stripSvg(effective)))
-      .png({ compressionLevel: 9, palette: true })
-      .toBuffer()
-  }
-
-  const background = await sharp(req.bandImage!)
-    .resize({ width: Math.round(w), height: Math.round(h), fit: 'cover', position: 'centre' })
-    .toBuffer()
-
-  // A readability scrim: the count and reward sit beside this band, and an
-  // owner's photo can be any brightness at all. On a ready card the tint
-  // flips to the mark colour so the state change still reads at a glance.
-  const ready = req.state === 'reward_ready'
-  const tint = ready ? req.fgColor : req.bgColor
-  const scrim = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(w)}" height="${Math.round(h)}">`
-    + `<rect width="${Math.round(w)}" height="${Math.round(h)}" fill="${tint}"`
-    + ` fill-opacity="${ready ? 0.55 : 0.3}"/></svg>`,
-  )
-
-  return sharp(background)
-    .composite([{ input: scrim, blend: 'over' }])
-    .png({ compressionLevel: 9 })
+  return sharp(Buffer.from(stripSvg(req)))
+    .png({ compressionLevel: 9, palette: true })
     .toBuffer()
 }
 
@@ -67,9 +33,9 @@ export function stripSvg(req: StripRequest): string {
   const h = height * scale
 
   const body =
-    style === 'stamps'   ? stampGrid(req, w, h, mark)
-  : style === 'progress' ? progressBar(req, w, h, mark)
-  : /* minimal | band */  ''   // minimal draws nothing; band is composited later
+    style === 'progress' ? progressBar(req, w, h, mark)
+  : style === 'minimal'  ? ''            // the count lives in a pass field
+  : /* stamps */           stampGrid(req, w, h, mark)
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${r(w)}" height="${r(h)}"`
     + ` viewBox="0 0 ${r(w)} ${r(h)}">`

@@ -58,24 +58,12 @@ export async function GET(
 
   const dimensions = size === 'hero' ? GOOGLE_HERO : APPLE_STRIP
 
-  // Only the band style needs an image, and only then is it worth a lookup.
-  let bandImage: Buffer | undefined
-  if (program.card_style === 'band' && program.band_image_url) {
-    const id = program.band_image_url.split('/').pop()
-    if (id && /^[0-9a-f-]{36}$/i.test(id)) {
-      const asset = await one<{ bytes: Buffer }>(
-        `select bytes from assets where id = $1`, [id],
-      )
-      bandImage = asset?.bytes
-    }
-  }
 
   const png = await renderStrip({
     stamps: count,
     stampsRequired: program.stamps_required,
     state: state as CardState,
     style: program.card_style as CardStyle,
-    bandImage,
     icon: program.stamp_icon as StampIcon,
     bgColor: program.bg_color,
     fgColor: program.fg_color,

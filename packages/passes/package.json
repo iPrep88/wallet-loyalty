@@ -10,7 +10,8 @@
     "./google": "./src/google.ts",
     "./strip": "./src/strip.ts",
     "./colors": "./src/colors.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./logo": "./src/logo.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

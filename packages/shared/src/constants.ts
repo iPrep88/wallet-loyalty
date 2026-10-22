@@ -39,22 +39,17 @@ export const CARD_STYLES = [
   {
     id: 'stamps',
     name: 'Stamp grid',
-    blurb: 'Icons across the card that fill up as they collect. The classic.',
+    blurb: 'Icons that fill up as they collect. The classic.',
   },
   {
     id: 'minimal',
     name: 'Minimal',
-    blurb: 'Brand colour, logo, and the count in the corner. Nothing else.',
-  },
-  {
-    id: 'band',
-    name: 'Branded band',
-    blurb: 'Your own image across the card. The most premium looking.',
+    blurb: 'Just the count, in your colours. Nothing else.',
   },
   {
     id: 'progress',
     name: 'Progress bar',
-    blurb: 'A bar that fills. Between the grid and the minimal.',
+    blurb: 'A bar that fills. Between the other two.',
   },
 ] as const
 
@@ -80,3 +75,22 @@ export const PIN_MAX_ATTEMPTS = 5
 export const PIN_LOCKOUT_SECONDS = 300
 
 export const BROADCASTS_PER_MONTH = { basic: 4, pro: 30 } as const
+
+
+/**
+ * Ready-made cards, for the owner who does not want to design anything.
+ *
+ * Each is a finished combination rather than a colour to start from — picking
+ * any of them produces a card that looks deliberate, which matters more than
+ * choice. An owner who makes an ugly card puts the QR stand in a drawer.
+ */
+export const CARD_TEMPLATES = [
+  { id: 'ink',       name: 'Ink',       bg: '#14181F', fg: '#F2F4F7', label: '#8E97A3' },
+  { id: 'porcelain', name: 'Porcelain', bg: '#F7F6F3', fg: '#1C1E22', label: '#6B6F76' },
+  { id: 'pine',      name: 'Pine',      bg: '#14342B', fg: '#E8F1EC', label: '#8FAFA0' },
+  { id: 'harbour',   name: 'Harbour',   bg: '#15293D', fg: '#E6EEF6', label: '#8FA6BC' },
+  { id: 'plum',      name: 'Plum',      bg: '#2A1A2E', fg: '#F3E8F5', label: '#A992AE' },
+  { id: 'ember',     name: 'Ember',     bg: '#2E1A14', fg: '#F7EAE3', label: '#BC9B8D' },
+] as const
+
+export type CardTemplateId = (typeof CARD_TEMPLATES)[number]['id']

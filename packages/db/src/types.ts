@@ -2,7 +2,7 @@ export type SubscriptionStatus =
   | 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused'
 
 /** Four looks, one renderer. */
-export type CardStyle = 'stamps' | 'minimal' | 'band' | 'progress'
+export type CardStyle = 'stamps' | 'minimal' | 'progress'
 
 export type EventType = 'join' | 'stamp' | 'redeem' | 'adjust' | 'undo'
 
