@@ -190,6 +190,9 @@ importers:
       '@wl/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      bcryptjs:
+        specifier: ^2.4.3
+        version: 2.4.3
       next:
         specifier: ^15.1.0
         version: 15.5.28(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -209,6 +212,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.0.0-beta.8
         version: 4.3.3
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
       '@types/node':
         specifier: ^22.10.1
         version: 22.20.5
