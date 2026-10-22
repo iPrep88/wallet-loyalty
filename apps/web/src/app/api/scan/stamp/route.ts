@@ -15,7 +15,7 @@ export async function POST(req: Request) {
 
   const result = await addStamps({
     token: input.token,
-    businessId: staff.businessId,
+    storeId: staff.storeId,
     staffId: staff.staffId,
     quantity: input.quantity ?? 1,
     clientEventId: input.client_event_id,

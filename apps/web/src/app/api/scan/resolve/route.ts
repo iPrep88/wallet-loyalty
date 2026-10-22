@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const input = await body<{ token: string }>(req)
   if (!input?.token) return err('bad_request', 'token is required.')
 
-  const result = await resolve(input.token, staff.businessId)
+  const result = await resolve(input.token, staff.storeId)
   if (!result.ok) return err(result.code, result.message)
   return ok({ member: result.data })
 }

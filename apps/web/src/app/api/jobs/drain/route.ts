@@ -65,7 +65,20 @@ async function run(job: Job): Promise<'done' | 'skipped'> {
       throw new Error('Google patch not implemented')
 
     case 'strip_warm':
-      // Nothing to do: the strip endpoint renders on demand and is immutable.
+      // Nothing to do: the artwork endpoint renders on demand and is immutable.
       return 'done'
+
+    case 'weekly_digest':
+      // TODO(phase 2): the Monday email. Owners will not log in to a
+      // dashboard, so the week's numbers go to them instead.
+      await skip(job.id, 'weekly digest not implemented yet')
+      return 'skipped'
+
+    case 'quiet_store_check':
+      // TODO(phase 2): warn when a store has gone several days without a
+      // scan. Shops churn because the tablet died and nobody noticed, not
+      // because they decided to leave.
+      await skip(job.id, 'quiet-store check not implemented yet')
+      return 'skipped'
   }
 }

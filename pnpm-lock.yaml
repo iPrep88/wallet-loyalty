@@ -233,10 +233,16 @@ importers:
       '@wl/shared':
         specifier: workspace:*
         version: link:../shared
+      bcryptjs:
+        specifier: ^2.4.3
+        version: 2.4.3
       pg:
         specifier: ^8.13.1
         version: 8.23.1
     devDependencies:
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
       '@types/pg':
         specifier: ^8.11.10
         version: 8.23.1

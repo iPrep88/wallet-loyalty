@@ -1,15 +1,30 @@
 export type SubscriptionStatus =
   | 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused'
 
-export type StampIcon = 'cup' | 'boba' | 'bean' | 'star' | 'heart' | 'circle' | 'custom'
+/** Four looks, one renderer. */
+export type CardStyle = 'stamps' | 'minimal' | 'band' | 'progress'
 
 export type EventType = 'join' | 'stamp' | 'redeem' | 'adjust' | 'undo'
 
-export type JobKind = 'push_member' | 'push_program' | 'google_patch' | 'strip_warm'
+export type JobKind =
+  | 'push_member' | 'push_program' | 'google_patch' | 'strip_warm'
+  | 'weekly_digest' | 'quiet_store_check'
 
-export interface Business {
+export type Audience = 'all' | 'one_away' | 'lapsed' | 'reward_ready'
+
+export interface User {
   id: string
-  owner_user_id: string | null
+  email: string
+  password_hash: string
+  name: string | null
+  created_at: Date
+  last_login_at: Date | null
+}
+
+/** The brand. Owns the card design and the subscription. */
+export interface Company {
+  id: string
+  owner_user_id: string
   name: string
   slug: string
   timezone: string
@@ -19,16 +34,34 @@ export interface Business {
   created_at: Date
 }
 
+/** A location. Its own stamp pool, counter QR, and staff. */
+export interface Store {
+  id: string
+  company_id: string
+  name: string
+  slug: string
+  address: string | null
+  /** Goes into the pass so the card wakes on a lock screen near the shop. */
+  latitude: number | null
+  longitude: number | null
+  active: boolean
+  created_at: Date
+}
+
+/** The card: how it looks, what it takes, what it gives. */
 export interface Program {
   id: string
-  business_id: string
+  company_id: string
   stamps_required: number
   reward_text: string
+  reward_value_cents: number | null
   join_bonus: number
   cooldown_seconds: number
+  card_style: CardStyle
   logo_url: string | null
   icon_url: string | null
-  stamp_icon: StampIcon
+  band_image_url: string | null
+  stamp_icon: string
   stamp_icon_url: string | null
   bg_color: string
   fg_color: string
@@ -46,7 +79,7 @@ export interface Program {
 
 export interface Member {
   id: string
-  program_id: string
+  store_id: string
   serial: string
   auth_token: string
   phone: string | null
@@ -65,7 +98,7 @@ export interface Member {
 
 export interface Staff {
   id: string
-  business_id: string
+  store_id: string
   name: string
   pin_hash: string
   active: boolean
@@ -75,9 +108,11 @@ export interface Staff {
 export interface StampEvent {
   id: string
   member_id: string
+  store_id: string
   staff_id: string | null
   type: EventType
   quantity: number
+  reward_value_cents: number | null
   client_event_id: string
   undoes_event_id: string | null
   created_at: Date

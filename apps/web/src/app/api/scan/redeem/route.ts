@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
   const result = await redeem({
     token: input.token,
-    businessId: staff.businessId,
+    storeId: staff.storeId,
     staffId: staff.staffId,
     clientEventId: input.client_event_id,
   })

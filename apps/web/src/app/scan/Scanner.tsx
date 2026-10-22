@@ -69,7 +69,7 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
 
   async function signIn() {
     setBusy(true); setError(null)
-    const { res, data } = await post<{ staff: { name: string } }>('/api/staff/pin', {
+    const { res, data } = await post<{ staff: { name: string }; store: string }>('/api/staff/pin', {
       slug, deviceId: deviceId(), pin,
     })
     setBusy(false); setPin('')
@@ -129,7 +129,7 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            placeholder="bubble-tea-co"
+            placeholder="bubble-tea-dundas"
             className="mt-1.5 w-full rounded-xl border border-neutral-300 px-4 py-3 text-base
                        dark:border-neutral-700 dark:bg-neutral-900"
           />

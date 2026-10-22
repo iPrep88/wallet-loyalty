@@ -11,7 +11,7 @@ export async function POST(req: Request) {
 
   const result = await undo({
     eventId: input.event_id,
-    businessId: staff.businessId,
+    storeId: staff.storeId,
     staffId: staff.staffId,
   })
   if (!result.ok) return err(result.code, result.message)

@@ -1,6 +1,6 @@
-import { one, type Program } from '@wl/db'
 import { notFound } from 'next/navigation'
 import { stripPath } from '@wl/shared'
+import { storeBySlug } from '@/lib/join'
 import JoinForm from './JoinForm'
 
 export const dynamic = 'force-dynamic'
@@ -13,16 +13,9 @@ export default async function JoinPage(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params
-
-  const program = await one<Program & { business_name: string }>(
-    `select p.*, b.name as business_name
-       from programs p join businesses b on b.id = p.business_id
-      where b.slug = $1
-      order by p.created_at
-      limit 1`,
-    [slug],
-  )
-  if (!program) notFound()
+  const found = await storeBySlug(slug)
+  if (!found) notFound()
+  const { store, program, companyName } = found
 
   const previewStrip = stripPath({
     programId: program.id,
@@ -39,21 +32,16 @@ export default async function JoinPage(
       <div className="mx-auto max-w-sm">
         {program.logo_url ? (
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={program.logo_url}
-            alt={program.business_name}
-            className="mx-auto h-12 w-auto object-contain"
-          />
+          <img src={program.logo_url} alt={companyName}
+               className="mx-auto h-12 w-auto object-contain" />
         ) : (
-          <h1 className="text-center text-2xl font-semibold tracking-tight">
-            {program.business_name}
-          </h1>
+          <h1 className="text-center text-2xl font-semibold tracking-tight">{companyName}</h1>
         )}
+        <p className="mt-1 text-center text-[13px]" style={{ color: program.label_color }}>
+          {store.name}
+        </p>
 
-        <p
-          className="mt-8 text-center text-3xl font-semibold leading-tight tracking-tight"
-          style={{ color: program.fg_color }}
-        >
+        <p className="mt-8 text-center text-3xl font-semibold leading-tight tracking-tight">
           {program.reward_text}
         </p>
         <p className="mt-2 text-center text-sm" style={{ color: program.label_color }}>
@@ -62,19 +50,11 @@ export default async function JoinPage(
         </p>
 
         {/* The card as it will look in the wallet. */}
-        <div
-          className="mt-8 overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/10"
-          style={{ backgroundColor: program.bg_color }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */
-          }
-          <img
-            src={previewStrip}
-            alt={`${program.stamps_required} stamp card`}
-            width={375}
-            height={98}
-            className="w-full"
-          />
+        <div className="mt-8 overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/10"
+             style={{ backgroundColor: program.bg_color }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={previewStrip} alt={`${program.stamps_required} stamp card`}
+               width={375} height={98} className="w-full" />
         </div>
 
         <JoinForm slug={slug} labelColor={program.label_color} fgColor={program.fg_color} />
@@ -85,7 +65,6 @@ export default async function JoinPage(
             {program.back_terms}
           </p>
         )}
-
         <p className="mt-6 text-center text-[11px] opacity-50">Powered by Wallet Loyalty</p>
       </div>
     </main>

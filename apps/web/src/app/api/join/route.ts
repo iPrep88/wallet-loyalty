@@ -1,4 +1,4 @@
-import { joinProgram } from '@/lib/join'
+import { joinStore } from '@/lib/join'
 import { isAppleConfigured } from '@wl/passes/apple'
 import { isGoogleConfigured } from '@wl/passes/google'
 import { cardState, headerValue } from '@wl/shared'
@@ -14,18 +14,15 @@ interface Req {
 
 /**
  * Creates (or recovers) a member and hands back whatever the platform can
- * actually deliver today.
- *
- * Neither wallet is configured yet, so there is no .pkpass and no Google save
- * link. Rather than fail, this returns the member and its card token so the
- * join page can show a real preview and the scanner loop is fully testable.
- * `pending` names what is still missing.
+ * actually deliver today. Neither wallet is configured yet, so this returns
+ * the card token instead of a pass — enough for the join page to show a real
+ * preview and for the scanner loop to be exercised end to end.
  */
 export async function POST(req: Request) {
   const input = await body<Req>(req)
   if (!input?.slug) return err('bad_request', 'slug is required.')
 
-  const result = await joinProgram({
+  const result = await joinStore({
     slug: input.slug,
     phone: input.phone ?? null,
     firstName: input.first_name ?? null,
@@ -34,7 +31,7 @@ export async function POST(req: Request) {
   })
   if (!result.ok) return err('bad_request', result.message)
 
-  const { member, program, token, existing } = result.data
+  const { member, program, store, token, existing } = result.data
   const pending: string[] = []
   if (!isAppleConfigured()) pending.push('apple')
   if (!isGoogleConfigured()) pending.push('google')
@@ -48,9 +45,8 @@ export async function POST(req: Request) {
       header: headerValue(member.stamps, program.stamps_required),
       state: cardState(member.stamps, program.stamps_required),
       reward_text: program.reward_text,
+      store: store.name,
     },
-    // The payload the card's QR will carry. Exposed now so the scanner can be
-    // exercised before any wallet exists.
     card_token: token,
     wallet: {
       apple_pkpass_url: isAppleConfigured() ? `/api/pass/apple/${member.serial}` : null,

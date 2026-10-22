@@ -22,7 +22,43 @@ export const APPLE_ICON = { width: 29, height: 29 } as const
 /** Offered in onboarding. 'custom' means the owner uploaded their own. */
 export const STAMP_ICONS = ['cup', 'boba', 'bean', 'star', 'heart', 'circle'] as const
 
-export const STAMPS_REQUIRED_OPTIONS = [8, 10, 12] as const
+/**
+ * Suggested in setup, but owners pick any number in this range: a $4 coffee
+ * and a $7 boba want different cards, and a shorter card brings people back
+ * sooner.
+ */
+export const STAMPS_REQUIRED_SUGGESTED = [5, 8, 10, 12] as const
+export const STAMPS_REQUIRED_MIN = 3
+export const STAMPS_REQUIRED_MAX = 20
+
+/**
+ * The four card looks. One renderer, four treatments — an owner picks one and
+ * never sees a colour picker unless they go looking for it.
+ */
+export const CARD_STYLES = [
+  {
+    id: 'stamps',
+    name: 'Stamp grid',
+    blurb: 'Icons across the card that fill up as they collect. The classic.',
+  },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    blurb: 'Brand colour, logo, and the count in the corner. Nothing else.',
+  },
+  {
+    id: 'band',
+    name: 'Branded band',
+    blurb: 'Your own image across the card. The most premium looking.',
+  },
+  {
+    id: 'progress',
+    name: 'Progress bar',
+    blurb: 'A bar that fills. Between the grid and the minimal.',
+  },
+] as const
+
+export type CardStyleId = (typeof CARD_STYLES)[number]['id']
 
 export const DEFAULTS = {
   joinBonus: 1,

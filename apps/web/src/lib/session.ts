@@ -8,9 +8,10 @@ import { cookies } from 'next/headers'
  * scanner only, which is all the foundation needs.
  */
 export interface StaffSession {
-  businessId: string
+  storeId: string
   staffId: string
   staffName: string
+  storeName: string
   /** Epoch seconds. */
   exp: number
 }

@@ -3,33 +3,37 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 /**
  * The QR code printed on a member's card.
  *
- *   base64url( "<serial>.<programId>.<hmac>" )
- *   hmac = HMAC_SHA256( QR_TOKEN_SECRET, "<serial>|<programId>" )
+ *   base64url( "<serial>.<storeId>.<hmac>" )
+ *   hmac = HMAC_SHA256( QR_TOKEN_SECRET, "<serial>|<storeId>" )
  *
- * Deliberately static: it is embedded in a signed pass that lives on the
- * customer's phone, so it cannot rotate per scan. That means a photograph of a
- * card is a lasting stamping credential — the defences against that are the
- * server-side cooldown and the fact that every event is attributed to a staff
- * member. See the "staff fraud" note in the spec review.
+ * The store travels in the token so a scanner can reject another shop's card
+ * before touching the database — stamps belong to one location, so a card from
+ * the Yonge St branch is not spendable at Dundas St.
+ *
+ * Deliberately static: it is baked into a signed pass on the customer's phone
+ * and cannot rotate. A photograph of a card is therefore a lasting stamping
+ * credential. The defences are the server-side cooldown and the fact that
+ * every event records which staff member caused it — detection, not
+ * prevention, which is the right trade at this price point.
  */
 export interface MemberToken {
   serial: string
-  programId: string
+  storeId: string
 }
 
-function sign(serial: string, programId: string, secret: string): string {
-  return createHmac('sha256', secret).update(`${serial}|${programId}`).digest('base64url')
+function sign(serial: string, storeId: string, secret: string): string {
+  return createHmac('sha256', secret).update(`${serial}|${storeId}`).digest('base64url')
 }
 
 export function createMemberToken(
-  { serial, programId }: MemberToken,
+  { serial, storeId }: MemberToken,
   secret = requireSecret(),
 ): string {
-  const sig = sign(serial, programId, secret)
-  return Buffer.from(`${serial}.${programId}.${sig}`, 'utf8').toString('base64url')
+  const sig = sign(serial, storeId, secret)
+  return Buffer.from(`${serial}.${storeId}.${sig}`, 'utf8').toString('base64url')
 }
 
-/** Returns the token's claims, or null if it is malformed or not ours. */
+/** The token's claims, or null if it is malformed or not ours. */
 export function verifyMemberToken(
   token: string,
   secret = requireSecret(),
@@ -43,15 +47,15 @@ export function verifyMemberToken(
 
   const parts = decoded.split('.')
   if (parts.length !== 3) return null
-  const [serial, programId, sig] = parts as [string, string, string]
-  if (!serial || !programId || !sig) return null
+  const [serial, storeId, sig] = parts as [string, string, string]
+  if (!serial || !storeId || !sig) return null
 
-  const expected = sign(serial, programId, secret)
+  const expected = sign(serial, storeId, secret)
   const a = Buffer.from(sig)
   const b = Buffer.from(expected)
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null
 
-  return { serial, programId }
+  return { serial, storeId }
 }
 
 function requireSecret(): string {

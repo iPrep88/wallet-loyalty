@@ -5,12 +5,14 @@ export const dynamic = 'force-dynamic'
 
 /** A development index. Not part of the product. */
 export default async function Home() {
-  let shops: { slug: string; name: string }[] = []
+  let stores: { slug: string; name: string; company: string }[] = []
   let dbError: string | null = null
 
   try {
-    shops = await query<{ slug: string; name: string }>(
-      `select slug, name from businesses order by created_at`,
+    stores = await query<{ slug: string; name: string; company: string }>(
+      `select s.slug, s.name, c.name as company
+         from stores s join companies c on c.id = s.company_id
+        where s.active order by c.name, s.created_at`,
     )
   } catch (e) {
     dbError = e instanceof Error ? e.message : String(e)
@@ -30,24 +32,23 @@ export default async function Home() {
       ) : (
         <>
           <h2 className="mt-10 text-xs font-medium uppercase tracking-wider text-neutral-400">
-            Shops
+            Stores
           </h2>
           <ul className="mt-3 divide-y divide-neutral-200 dark:divide-neutral-800">
-            {shops.length === 0 && (
+            {stores.length === 0 && (
               <li className="py-3 text-sm text-neutral-500">
-                No shops yet — run <code className="font-mono">pnpm db:seed</code>.
+                None yet — run <code className="font-mono">pnpm db:seed</code>.
               </li>
             )}
-            {shops.map((shop) => (
-              <li key={shop.slug} className="flex items-center justify-between py-3">
-                <span className="text-sm font-medium">{shop.name}</span>
-                <span className="flex gap-3 text-sm">
-                  <Link href={`/j/${shop.slug}`} className="text-blue-600 hover:underline">
-                    join page
-                  </Link>
-                  <Link href={`/scan?shop=${shop.slug}`} className="text-blue-600 hover:underline">
-                    scanner
-                  </Link>
+            {stores.map((s) => (
+              <li key={s.slug} className="flex items-center justify-between gap-3 py-3">
+                <span className="text-sm">
+                  <span className="font-medium">{s.company}</span>
+                  <span className="text-neutral-500"> · {s.name}</span>
+                </span>
+                <span className="flex flex-none gap-3 text-sm">
+                  <Link href={`/j/${s.slug}`} className="text-blue-600 hover:underline">join</Link>
+                  <Link href={`/scan?store=${s.slug}`} className="text-blue-600 hover:underline">scan</Link>
                 </span>
               </li>
             ))}
