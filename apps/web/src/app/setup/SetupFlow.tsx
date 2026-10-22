@@ -16,6 +16,7 @@ interface Props {
   company: { name: string; slug: string }
   store: { name: string; slug: string; address: string; showName: boolean }
   program: PreviewProgram & {
+    photo_url: string | null
     stamp_icon: string
     reward_value_cents: number | null
     back_hours: string | null
@@ -74,22 +75,26 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
     setProgram((p) => ({ ...p, [key]: value }))
   }
 
-  async function uploadImage(file: File) {
+  async function uploadImage(file: File, kind: 'logo' | 'photo' = 'logo') {
     setUploading(true); setError(null)
     try {
       const form = new FormData()
       form.append('logo', file)
+      form.append('kind', kind)
       const res = await fetch('/api/owner/logo', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok || !data.ok) { setError(data.message ?? 'Could not read that image.'); return }
-      setProgram((p) => ({
-        ...p,
-        logo_url: data.logo_url,
-        bg_color: data.palette.bg,
-        fg_color: data.palette.fg,
-        label_color: data.palette.label,
-        design_version: p.design_version + 1,
-      }))
+      setProgram((p) => kind === 'photo'
+        ? { ...p, photo_url: data.photo_url, card_style: 'photo',
+            design_version: p.design_version + 1 }
+        : {
+            ...p,
+            logo_url: data.logo_url,
+            bg_color: data.palette.bg,
+            fg_color: data.palette.fg,
+            label_color: data.palette.label,
+            design_version: p.design_version + 1,
+          })
     } catch {
       setError('Upload failed. Please try again.')
     } finally {
@@ -196,7 +201,9 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                 )
               })}
             </div>
-            <StylePicker program={program} set={set} save={save} />
+            <ModePicker program={program} set={set} save={save}
+                        onPhoto={(f) => void uploadImage(f, 'photo')}
+                        uploading={uploading} />
             <button onClick={() => setPath(null)}
                     className="mt-5 text-sm text-link hover:underline">
               Back to the two options
@@ -216,7 +223,9 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
                 : program.logo_url ? 'Choose a different logo' : 'Upload a logo'}
             </label>
 
-            <StylePicker program={program} set={set} save={save} />
+            <ModePicker program={program} set={set} save={save}
+                        onPhoto={(f) => void uploadImage(f, 'photo')}
+                        uploading={uploading} />
 
             <button onClick={() => setCustomising((v) => !v)}
                     className="mt-5 text-sm text-link hover:underline">
@@ -392,48 +401,70 @@ export default function SetupFlow({ company, store, program: initial }: Props) {
 }
 
 
-function StylePicker(
-  { program, set, save }: {
-    program: { card_style: string; stamp_icon: string }
+function ModePicker(
+  { program, set, save, onPhoto, uploading }: {
+    program: { card_style: string; stamp_icon: string; photo_url: string | null }
     set: (k: never, v: never) => void
     save: (patch: Record<string, unknown>, immediate?: boolean) => void
+    onPhoto: (file: File) => void
+    uploading: boolean
   },
 ) {
+  const put = set as unknown as (k: string, v: string) => void
   return (
     <>
-      <p className="mt-6 text-sm font-medium">How the stamps show</p>
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        {CARD_STYLES.map((st) => (
-          <button key={st.id}
-            onClick={() => { (set as (k: string, v: string) => void)('card_style', st.id)
-                             save({ card_style: st.id }, true) }}
-            className={`rounded-xl border p-2.5 text-left transition ${
-              program.card_style === st.id
-                ? 'border-accent'
-                : 'border-line'}`}>
-            <span className="block text-[13px] font-medium">{st.name}</span>
+      <p className="mt-6 text-sm font-semibold">Card style</p>
+      <div className="mt-2 space-y-2">
+        {CARD_STYLES.map((st) => {
+          const soon = 'comingSoon' in st && st.comingSoon
+          const chosen = program.card_style === st.id
+          return (
+            <button key={st.id} disabled={soon}
+              onClick={() => { if (soon) return; put('card_style', st.id)
+                               save({ card_style: st.id }, true) }}
+              className={`w-full rounded-xl border p-3.5 text-left transition-colors ${
+                soon ? 'border-line opacity-45'
+                : chosen ? 'border-accent bg-accent-soft'
+                : 'border-line hover:border-faint'}`}>
+              <span className="flex items-center gap-2 text-[14px] font-semibold">
+                {st.name}
+                {soon && (
+                  <span className="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase
+                                   tracking-wider text-faint">soon</span>
+                )}
+              </span>
+              <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">
+                {st.blurb}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {program.card_style === 'photo' && (
+        <label className="mt-3 flex cursor-pointer items-center justify-center rounded-xl
+                          border border-dashed border-line px-4 py-5 text-[13.5px] text-muted">
+          <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhoto(f) }} />
+          {uploading ? 'Reading your photo…'
+            : program.photo_url ? 'Use a different photo'
+            : 'Add a photo — we handle the crop'}
+        </label>
+      )}
+
+      <p className="mt-5 text-sm font-semibold">Stamp mark</p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {STAMP_ICONS.map((icon) => (
+          <button key={icon}
+            onClick={() => { put('stamp_icon', icon); save({ stamp_icon: icon }, true) }}
+            className={`rounded-lg border px-2.5 py-1.5 text-[13px] capitalize transition-colors ${
+              program.stamp_icon === icon
+                ? 'border-accent bg-accent-soft font-semibold'
+                : 'border-line text-muted hover:border-faint'}`}>
+            {icon}
           </button>
         ))}
       </div>
-
-      {program.card_style === 'stamps' && (
-        <>
-          <p className="mt-4 text-sm font-medium">Stamp</p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {STAMP_ICONS.map((icon) => (
-              <button key={icon}
-                onClick={() => { (set as (k: string, v: string) => void)('stamp_icon', icon)
-                                 save({ stamp_icon: icon }, true) }}
-                className={`rounded-lg border px-2.5 py-1.5 text-[13px] capitalize ${
-                  program.stamp_icon === icon
-                    ? 'border-accent'
-                    : 'border-line'}`}>
-                {icon}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
     </>
   )
 }

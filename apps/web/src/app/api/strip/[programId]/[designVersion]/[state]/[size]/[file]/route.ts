@@ -58,12 +58,25 @@ export async function GET(
 
   const dimensions = size === 'hero' ? GOOGLE_HERO : APPLE_STRIP
 
+  // Only the photo mode needs an image, and only then is it worth a lookup.
+  let photo: Buffer | undefined
+  if (program.card_style === 'photo' && program.photo_url) {
+    const id = program.photo_url.split('/').pop()
+    if (id && /^[0-9a-f-]{36}$/i.test(id)) {
+      const asset = await one<{ bytes: Buffer }>(
+        `select bytes from assets where id = $1`, [id],
+      )
+      photo = asset?.bytes
+    }
+  }
+
 
   const png = await renderStrip({
     stamps: count,
     stampsRequired: program.stamps_required,
     state: state as CardState,
     style: program.card_style as CardStyle,
+    photo,
     icon: program.stamp_icon as StampIcon,
     bgColor: program.bg_color,
     fgColor: program.fg_color,

@@ -37,19 +37,23 @@ export const STAMPS_REQUIRED_MAX = 20
  */
 export const CARD_STYLES = [
   {
-    id: 'stamps',
-    name: 'Stamp grid',
-    blurb: 'Icons that fill up as they collect. The classic.',
-  },
-  {
     id: 'minimal',
     name: 'Minimal',
-    blurb: 'Just the count, in your colours. Nothing else.',
+    blurb: 'Your logo and colours, nothing else. Needs no photo and usually looks the most expensive.',
+    needsPhoto: false,
   },
   {
-    id: 'progress',
-    name: 'Progress bar',
-    blurb: 'A bar that fills. Between the other two.',
+    id: 'photo',
+    name: 'Photo',
+    blurb: 'One picture of your shop or your product. We crop and shade it so your card still reads.',
+    needsPhoto: true,
+  },
+  {
+    id: 'ai',
+    name: 'Signature',
+    blurb: 'Artwork generated from your brand. Coming soon.',
+    needsPhoto: false,
+    comingSoon: true,
   },
 ] as const
 

@@ -2,7 +2,7 @@ export type SubscriptionStatus =
   | 'trialing' | 'active' | 'past_due' | 'canceled' | 'paused'
 
 /** Four looks, one renderer. */
-export type CardStyle = 'stamps' | 'minimal' | 'progress'
+export type CardStyle = 'minimal' | 'photo' | 'ai'
 
 export type EventType = 'join' | 'stamp' | 'redeem' | 'adjust' | 'undo'
 
@@ -60,7 +60,7 @@ export interface Program {
   card_style: CardStyle
   logo_url: string | null
   icon_url: string | null
-  band_image_url: string | null
+  photo_url: string | null
   stamp_icon: string
   stamp_icon_url: string | null
   bg_color: string

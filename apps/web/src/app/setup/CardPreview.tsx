@@ -30,7 +30,9 @@ export default function CardPreview({
   stamps?: number
 }) {
   const ready = stamps >= program.stamps_required
-  const showsBand = program.card_style !== 'minimal'
+  // Every mode draws the band — the modes differ in what is behind the marks,
+  // not whether there are marks.
+  const showsBand = true
 
   const strip = stripPath({
     programId: program.id,

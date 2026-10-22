@@ -1,6 +1,6 @@
 export type StampIcon = 'cup' | 'boba' | 'bean' | 'star' | 'heart' | 'circle' | 'custom'
 export type CardState = 'collecting' | 'reward_ready'
-export type CardStyle = 'stamps' | 'minimal' | 'progress'
+export type CardStyle = 'minimal' | 'photo' | 'ai'
 
 export interface StripRequest {
   stamps: number
@@ -14,8 +14,10 @@ export interface StripRequest {
   /** Pixel dimensions at 1x. Apple's strip and Google's hero differ. */
   width: number
   height: number
-  /** Which of the four looks to draw. */
+  /** Which ground the card sits on. */
   style?: CardStyle
+  /** For style 'photo': the merchant's picture, already loaded. */
+  photo?: Buffer
   /** 1, 2 or 3 for Apple's @Nx variants. */
   scale?: number
 }
