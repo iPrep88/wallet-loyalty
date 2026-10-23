@@ -1,7 +1,7 @@
 import { one, type Program } from '@wl/db'
 import { renderStrip } from '@wl/passes/strip'
 import type { CardState, CardStyle, StampIcon } from '@wl/passes/types'
-import { APPLE_STRIP, GOOGLE_HERO } from '@wl/shared'
+import { APPLE_STRIP, GOOGLE_HERO, ART_VERSION } from '@wl/shared'
 
 /**
  * The stamp strip, as an immutable public image.
@@ -47,9 +47,12 @@ export async function GET(
   const program = await one<Program>(`select * from programs where id = $1`, [programId])
   if (!program) return new Response('Not found', { status: 404 })
 
-  // A stale designVersion must not render: it would poison the CDN with an
-  // image that no longer matches the card.
-  if (Number(designVersion) !== program.design_version) {
+  // A stale version must not render: it would poison the CDN with an image
+  // that no longer matches the card. Two halves to it — what the owner last
+  // changed, and which generation of our own artwork drew the marks.
+  const [ownerVersion, artVersion] = designVersion.split('-')
+  if (Number(ownerVersion) !== program.design_version
+      || artVersion !== String(ART_VERSION)) {
     return new Response('Stale design version', { status: 404 })
   }
   if (count > program.stamps_required) {
