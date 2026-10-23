@@ -22,20 +22,33 @@ const PATHS: Record<Exclude<StampIcon, 'custom'>, string> = {
     'M22 20h56l-3 10H25zM27 34h46l-6 54a6 6 0 0 1-6 5H39a6 6 0 0 1-6-5z'
     + 'M40 74a5 5 0 1 0 0.1 0zM54 78a5 5 0 1 0 0.1 0zM47 66a5 5 0 1 0 0.1 0z',
 
-  // A noodle bowl with chopsticks lifting a strand out of it.
+  // Ramen: a bowl with a footed base, chopsticks laid across the top, three
+  // strands hanging off them, and a slice of naruto resting on the broth.
   //
-  // Every subpath here is a closed shape, not a line. A collected stamp is
-  // drawn fill-only, so a chopstick described as a stroke renders as nothing —
-  // which is exactly how the first two attempts at this icon lost their
-  // chopsticks and went back to reading as a cup of soup.
+  // Every subpath is a closed shape, not a line. A collected stamp is drawn
+  // fill-only, so a chopstick described as a stroke renders as nothing — which
+  // is how two earlier attempts at this icon lost their chopsticks and went
+  // back to reading as a cup of soup. Nothing overlaps anything else either:
+  // the marks are filled with fill-rule evenodd, so two shapes crossing would
+  // punch a hole where they meet rather than merge.
   bowl:
-    // the bowl
-    'M7 50h86c0 23-19 42-43 42S7 73 7 50z'
-    // two chopsticks, as slim quadrilaterals angled out to the upper right
-    + 'M41 47 83 9l5 5-42 38z'
-    + 'M50 54 92 16l5 5-42 38z'
-    // a strand draping off them back down toward the bowl
-    + 'M57 36c-8 11-7 22 3 30l-6 4c-13-10-14-25-4-38z',
+    // chopsticks — the near one level, the far one angled up to the right
+    'M8 16 90 4l1 6-82 12z'
+    + 'M8 24h84v6H8z'
+    // three strands of noodles, hanging off them down to the broth
+    // One long wave each rather than two short ones: at the size these ship
+    // at, a tight zigzag closes up into a solid band and stops being noodles.
+    + 'M13 30c-6 8 6 14 0 22h7c6-8-6-14 0-22z'
+    + 'M28 30c-6 8 6 14 0 22h7c6-8-6-14 0-22z'
+    + 'M43 30c-6 8 6 14 0 22h7c6-8-6-14 0-22z'
+    // the naruto: a ring with a dot at its heart, cut off by the broth line
+    + 'M64 52a14 14 0 0 1 28 0z'
+    + 'M71 52a7 7 0 0 1 14 0z'
+    + 'M75.5 52a2.5 2.5 0 0 1 5 0z'
+    // the rim band, then the bowl, then its foot
+    + 'M5 53h90v8H5z'
+    + 'M10 64h80c0 15-13 26-29 26H39c-16 0-29-11-29-26z'
+    + 'M41 91h18v3a3 3 0 0 1-3 3H44a3 3 0 0 1-3-3z',
 
   // A croissant: a fat crescent with three segment slivers cut through it.
   // The slivers are closed shapes so that fill-rule evenodd punches them out

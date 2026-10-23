@@ -35,7 +35,7 @@ export const STAMP_ICON_LABELS: Record<(typeof STAMP_ICONS)[number], string> = {
   boba:      'Boba cup',
   cup:       'Cup',
   bean:      'Coffee bean',
-  bowl:      'Noodle bowl',
+  bowl:      'Ramen',
   croissant: 'Croissant',
   scoop:     'Ice cream',
   star:      'Star',
