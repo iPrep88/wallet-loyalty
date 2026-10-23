@@ -1,5 +1,6 @@
 import sharp from 'sharp'
 import { iconPath, REWARD_PATH } from './stamp-icons'
+import { MARK } from '@wl/shared/mark'
 import type { StripRequest } from './types'
 
 /**
@@ -210,13 +211,18 @@ function stampRow(req: StripRequest, w: number, h: number, mark: string): string
  * not a logo on the front.
  */
 function signature(w: number, h: number, mark: string): string {
-  const s = Math.max(7, h * 0.072)
-  const x = w - s * 2.9
-  const y = h - s * 1.75
-  return `<g transform="translate(${n(x)} ${n(y)}) scale(${n(s / 24, 5)})" opacity="0.17">`
-    + `<rect x="1.5" y="4.5" width="21" height="15" rx="3.5" fill="none"`
-    + ` stroke="${mark}" stroke-width="2"/>`
-    + `<path d="M1.5 9.5h21" stroke="${mark}" stroke-width="2"/>`
+  const s = Math.max(7, h * 0.085)
+  const x = w - s * 1.9
+  const y = h - s * 1.8
+  // The mark is drawn in a 100-unit box cropped to `viewBox`, so it has to be
+  // shifted to that crop's origin before being scaled down to signature size.
+  const [vx, vy, vw] = MARK.viewBox.split(' ').map(Number) as [number, number, number]
+  const k = s / vw
+  return `<g transform="translate(${n(x)} ${n(y)}) scale(${n(k, 5)})`
+    + ` translate(${n(-vx)} ${n(-vy)})" opacity="0.2">`
+    + `<path d="${MARK.arm}" fill="none" stroke="${mark}"`
+    + ` stroke-width="${MARK.armWidth}" stroke-linecap="round"/>`
+    + `<circle cx="${MARK.dot.cx}" cy="${MARK.dot.cy}" r="${MARK.dot.r}" fill="${mark}"/>`
     + `</g>`
 }
 

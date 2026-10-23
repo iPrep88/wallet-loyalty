@@ -11,6 +11,7 @@
     "./card": "./src/card.ts",
     "./pin": "./src/pin.ts",
     "./rewards": "./src/rewards.ts",
+    "./mark": "./src/mark.ts",
     "./strip-url": "./src/strip-url.ts"
   },
   "scripts": {

@@ -8,6 +8,7 @@
  */
 import type { ReactNode } from 'react'
 import { PRODUCT_NAME } from '@/lib/product'
+import { MARK } from '@wl/shared/mark'
 
 export function Card(
   { children, className = '', flush = false }:
@@ -117,17 +118,18 @@ export function Notice(
   )
 }
 
-/** The mark, drawn rather than loaded — one small file fewer to serve. */
+/**
+ * The mark, drawn rather than loaded — one small file fewer to serve, and the
+ * same geometry the favicon and the card signature are cut from, so there is
+ * only ever one Repio logo.
+ */
 export function Logo({ size = 22 }: { size?: number }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-        <rect x="1.5" y="4.5" width="21" height="15" rx="3.5"
-              stroke="var(--accent)" strokeWidth="1.8" />
-        <path d="M1.5 9.5h21" stroke="var(--accent)" strokeWidth="1.8" />
-        <circle cx="7" cy="14.5" r="1.6" fill="var(--accent)" />
-        <circle cx="12" cy="14.5" r="1.6" fill="var(--accent)" />
-        <circle cx="17" cy="14.5" r="1.6" fill="var(--accent)" opacity="0.3" />
+      <svg width={size} height={size} viewBox={MARK.viewBox} fill="none" aria-hidden>
+        <path d={MARK.arm} stroke="currentColor" strokeWidth={MARK.armWidth}
+              strokeLinecap="round" />
+        <circle cx={MARK.dot.cx} cy={MARK.dot.cy} r={MARK.dot.r} fill="currentColor" />
       </svg>
       <span className="text-[14px] font-extrabold tracking-[-0.02em]">{PRODUCT_NAME}</span>
     </span>

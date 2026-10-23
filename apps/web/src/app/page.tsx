@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { BRAND, UNVERIFIED } from './_brand'
 import { AddToWallet, FakeQr, Phone, PhotoSlot, StatusBar, WalletCard } from './_marketing'
+import { MARK } from '@wl/shared/mark'
 
 export const metadata = {
   title: 'REPIO — Loyalty cards that live in the wallet',
@@ -33,13 +34,28 @@ export default function Landing() {
 
 const CONTAINER = 'mx-auto w-full max-w-[1080px] px-6'
 
+/* ------------------------------------------------------------------ mark */
+
+/** The r, beside the name. Same geometry as the favicon and the signature
+ *  drawn into every customer's card — one logo, cut three ways. */
+function Mark({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox={MARK.viewBox} fill="none" aria-hidden>
+      <path d={MARK.arm} stroke="currentColor" strokeWidth={MARK.armWidth}
+            strokeLinecap="round" />
+      <circle cx={MARK.dot.cx} cy={MARK.dot.cy} r={MARK.dot.r} fill="currentColor" />
+    </svg>
+  )
+}
+
 /* ------------------------------------------------------------------- nav */
 function Nav() {
   return (
     <header className="absolute inset-x-0 top-0 z-20">
       <div className={`${CONTAINER} flex h-[72px] items-center justify-between gap-6`}>
-        <span className="text-[15px] font-bold tracking-[0.3em]" style={{ color: BRAND.white }}>
-          REPIO
+        <span className="inline-flex items-center gap-2.5" style={{ color: BRAND.white }}>
+          <Mark size={26} />
+          <span className="text-[15px] font-bold tracking-[0.3em]">REPIO</span>
         </span>
         <nav className="hidden items-center gap-8 text-[13.5px] font-medium md:flex"
              style={{ color: 'rgba(232,244,255,.72)' }}>
@@ -588,8 +604,9 @@ function Footer() {
   return (
     <footer style={{ background: BRAND.midnight }}>
       <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-5 py-10`}>
-        <span className="text-[13px] font-bold tracking-[0.3em]" style={{ color: BRAND.white }}>
-          REPIO
+        <span className="inline-flex items-center gap-2.5" style={{ color: BRAND.white }}>
+          <Mark size={22} />
+          <span className="text-[13px] font-bold tracking-[0.3em]">REPIO</span>
         </span>
         <nav className="flex flex-wrap gap-6 text-[12.5px]"
              style={{ color: 'rgba(232,244,255,.55)' }}>
