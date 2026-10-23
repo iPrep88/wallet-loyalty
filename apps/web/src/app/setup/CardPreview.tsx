@@ -1,12 +1,14 @@
 'use client'
 
 import { stripPath } from '@wl/shared/strip-url'
+import { dealQualifier } from '@wl/shared/rewards'
 
 export interface PreviewProgram {
   id: string
   design_version: number
   card_style: string
   stamps_required: number
+  reward_in_grid: boolean
   reward_text: string
   logo_url: string | null
   bg_color: string
@@ -47,15 +49,21 @@ export default function CardPreview({
       className="overflow-hidden rounded-[18px] shadow-xl ring-1 ring-black/10"
       style={{ backgroundColor: program.bg_color, color: program.fg_color }}
     >
-      {/* Logo row and the count, where Apple puts them. */}
+      {/* Logo row and the count, where Apple puts them.
+          The name sits BESIDE the logo rather than instead of it, because
+          that is what a real pass does: the logo is an image and the name is
+          `logoText`, and Apple draws both. Showing one or the other here
+          would have been a preview of a card we do not make. */}
       <div className="flex items-center justify-between gap-3 px-4 pt-3.5 pb-3">
         <div className="min-w-0 flex-1">
-          {program.logo_url ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={program.logo_url} alt="" className="h-7 w-auto max-w-[120px] object-contain" />
-          ) : (
-            <span className="block truncate text-[13px] font-semibold">{shopName}</span>
-          )}
+          <span className="flex min-w-0 items-center gap-2">
+            {program.logo_url && (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={program.logo_url} alt=""
+                   className="h-7 w-auto max-w-[76px] flex-none object-contain" />
+            )}
+            <span className="min-w-0 truncate text-[13px] font-semibold">{shopName}</span>
+          </span>
           {storeName && (
             <span className="mt-0.5 block truncate text-[10px]"
                   style={{ color: program.label_color }}>{storeName}</span>
@@ -80,12 +88,20 @@ export default function CardPreview({
         <div className="text-[9px] uppercase tracking-wider"
              style={{ color: program.label_color }}>Reward</div>
         <div className="truncate text-[14px] font-medium">{program.reward_text}</div>
+        <div className="mt-0.5 truncate text-[10px]" style={{ color: program.label_color }}>
+          {dealQualifier(program.stamps_required, program.reward_in_grid)}
+        </div>
       </div>
 
       {/* The QR, which is why the band above it is as short as it is. The
           caption is the pass's barcode altText — Apple draws it under the code
-          itself, so staff and customer both know what the thing is for. */}
-      <div className="flex flex-col items-center gap-1.5 pb-5">
+          itself, so staff and customer both know what the thing is for.
+
+          Hidden on a phone. It is a placeholder — the real code is the last
+          screen — and it is 250 pixels of a 812-pixel screen, which is the
+          difference between seeing the card change as you work and scrolling
+          back up to check. */}
+      <div className="hidden flex-col items-center gap-1.5 pb-5 lg:flex">
         <div className="size-[72px] rounded-[4px] bg-white p-1.5">
           <div className="size-full"
                style={{

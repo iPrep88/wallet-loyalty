@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   CARD_TEMPLATES, STAMP_ICONS, STAMP_ICON_LABELS,
-  STAMPS_REQUIRED_SUGGESTED, STAMPS_REQUIRED_MIN, STAMPS_REQUIRED_MAX,
+  STAMPS_REQUIRED_MIN, STAMPS_REQUIRED_MAX,
 } from '@wl/shared/constants'
-import { REWARD_PRESETS, REWARD_MAX_LENGTH } from '@wl/shared/rewards'
+import { REWARD_PRESETS, REWARD_MAX_LENGTH, dealLine, cardBoxes } from '@wl/shared/rewards'
 import { inputClass as input } from '@/components/ui'
 import { postForm, postJson, putJson } from '@/lib/post'
 import CardPreview, { type PreviewProgram } from './CardPreview'
@@ -48,6 +48,10 @@ type Program = PreviewProgram & {
 type Path = null | 'own' | 'template'
 
 const STEPS = ['Your card', 'Your reward', 'Your code'] as const
+
+/** Box counts an owner actually prints. Boxes, not visits — the number they
+ *  are choosing is the one anybody can count on the card. */
+const BOX_CHOICES = [6, 8, 10, 12] as const
 
 export default function SetupFlow({
   company, store, program: initial,
@@ -151,8 +155,18 @@ export default function SetupFlow({
     ? `${window.location.origin}/j/${store.slug}`
     : `/j/${store.slug}`
 
+  // Step one has a screen inside a screen: the two paths, and then the one
+  // they picked. Back has to walk out of the inner screen before it walks out
+  // of the step, or the other half of the choice is only reachable by a text
+  // link at the bottom that nobody scrolls to.
+  const canGoBack = step > 0 || (step === 0 && path !== null)
+  function goBack() {
+    if (step === 0) { setPath(null); setLookup(null); return }
+    setStep((s) => s - 1)
+  }
+
   return (
-    <main className="mx-auto min-h-dvh max-w-5xl px-5 py-8">
+    <main className="mx-auto min-h-dvh max-w-5xl px-5 py-6 sm:py-8">
       <div className="flex gap-1.5" aria-hidden>
         {STEPS.map((_, i) => (
           <span key={i} className={`h-1 flex-1 rounded-full ${
@@ -166,7 +180,12 @@ export default function SetupFlow({
 
       <div className="mt-5 grid gap-7 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-12">
         {step < 2 ? (
-          <div className="lg:sticky lg:top-6 lg:self-start">
+          /* Pinned on a phone too. Every control on these screens changes
+             this card, and a preview you have to scroll back up to is a
+             preview nobody looks at. */
+          <div className="sticky top-0 z-20 -mx-5 bg-page px-5 pb-3 pt-2
+                          lg:top-6 lg:z-auto lg:mx-0 lg:self-start
+                          lg:px-0 lg:pb-0 lg:pt-0">
             <CardPreview
               program={program}
               shopName={shopName || company.name}
@@ -180,6 +199,8 @@ export default function SetupFlow({
         ) : <div className="hidden lg:block" />}
 
         <div className="mx-auto w-full max-w-md lg:mx-0">
+          {canGoBack && <BackButton onClick={goBack} />}
+
           {step === 0 && path === null && <ChooseAPath onPick={setPath} shopName={shopName} />}
 
           {step === 0 && path === 'own' && (
@@ -193,7 +214,6 @@ export default function SetupFlow({
               onOption={(o) => void applyOption(o)}
               onTemplate={applyTemplate}
               onColor={(k, v) => { set(k, v); save({ [k]: v }) }}
-              onBack={() => { setPath(null); setLookup(null) }}
               onSaveName={(v) => save({ shop_name: v })}
             />
           )}
@@ -204,7 +224,6 @@ export default function SetupFlow({
               uploading={uploading}
               onUpload={(f) => void uploadImage(f)}
               onTemplate={applyTemplate}
-              onBack={() => setPath(null)}
               onSaveName={(v) => save({ shop_name: v })}
             />
           )}
@@ -214,7 +233,8 @@ export default function SetupFlow({
           )}
 
           {step === 2 && (
-            <YourCode storeSlug={store.slug} joinUrl={joinUrl} />
+            <YourCode storeSlug={store.slug} shopName={shopName || company.name}
+                      joinUrl={joinUrl} />
           )}
 
           {error && (
@@ -222,25 +242,49 @@ export default function SetupFlow({
                           text-sm text-red-700 dark:text-red-200">{error}</p>
           )}
 
-          <div className="mt-8 flex gap-3">
-            {step > 0 && (
-              <button onClick={() => setStep((s) => s - 1)}
-                className="rounded-xl border border-line px-5 py-3.5 text-base font-medium">
-                Back
-              </button>
-            )}
-            {step < STEPS.length - 1 && path !== null && (
-              <button onClick={() => setStep((s) => s + 1)}
-                className="flex-1 rounded-xl bg-accent px-4 py-3.5 text-base font-semibold
-                           text-accent-ink">
-                {step === 1 ? 'Get my code' : 'Next'}
-              </button>
-            )}
-          </div>
+          {step < STEPS.length - 1 && path !== null && (
+            <button onClick={() => setStep((s) => s + 1)}
+              className="mt-8 w-full rounded-xl bg-accent px-4 py-3.5 text-base font-semibold
+                         text-accent-ink">
+              {step === 1 ? 'Get my code' : 'Next'}
+            </button>
+          )}
         </div>
       </div>
     </main>
   )
+}
+
+/**
+ * The way out of wherever you are.
+ *
+ * Above the content, not under it: on a phone the bottom of a screen is three
+ * scrolls away, and a back control you have to go looking for is one nobody
+ * uses — which is how the other half of a two-way choice ends up invisible.
+ */
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      className="-ml-2 mb-3 inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5
+                 text-[13.5px] font-medium text-muted transition-colors
+                 hover:bg-surface-2 hover:text-ink">
+      <svg viewBox="0 0 16 16" className="size-3.5" aria-hidden>
+        <path d="M9.5 3 4.5 8l5 5" fill="none" stroke="currentColor" strokeWidth="1.9"
+              strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      Back
+    </button>
+  )
+}
+
+/** A field that cannot be left blank. */
+function Req() {
+  return <span className="ml-0.5 text-red-500" aria-label="required">*</span>
+}
+
+/** A field that can. */
+function Optional() {
+  return <span className="ml-1.5 text-[11.5px] font-normal text-faint">Optional</span>
 }
 
 /* ------------------------------------------------------------- step one */
@@ -287,11 +331,12 @@ function ShopName(
 ) {
   return (
     <>
-      <p className="mt-6 text-sm font-semibold">Your shop name</p>
+      <p className="mt-6 text-sm font-semibold">Your shop name<Req /></p>
       <input value={shopName} placeholder="Bubble Tea Co" className={input}
              onChange={(e) => { setShopName(e.target.value); onSaveName(e.target.value) }} />
       <p className="mt-1.5 text-[12.5px] text-muted">
-        Customers see this on their card, so use the name on your sign.
+        It runs across the top of the card beside your logo, and across the top of
+        your counter stand. Use the name on your sign.
       </p>
     </>
   )
@@ -311,7 +356,6 @@ function OwnDesign(props: {
   onOption: (o: LookupOption) => void
   onTemplate: (t: (typeof CARD_TEMPLATES)[number]) => void
   onColor: (k: 'bg_color' | 'fg_color' | 'label_color', v: string) => void
-  onBack: () => void
 }) {
   const { program, lookup } = props
   return (
@@ -327,25 +371,8 @@ function OwnDesign(props: {
           : program.logo_url ? 'Use a different logo' : 'Upload your logo'}
       </label>
 
-      {/* Secondary on purpose. It is a shortcut that works most of the time,
-          not a route to depend on — if it misses, the owner has lost nothing
-          because the upload above is the real path. */}
-      <details className="mt-3">
-        <summary className="cursor-pointer text-[13px] text-link">
-          Or paste your website and we will find it
-        </summary>
-        <div className="mt-2.5 flex gap-2">
-          <input value={props.website} placeholder="yourshop.ca"
-                 inputMode="url" autoCapitalize="off" className={`${input} flex-1`}
-                 onChange={(e) => props.setWebsite(e.target.value)}
-                 onKeyDown={(e) => { if (e.key === 'Enter') props.onFind() }} />
-          <button onClick={props.onFind} disabled={props.looking || !props.website.trim()}
-            className="mt-1.5 flex-none rounded-xl bg-accent px-4 text-[14px] font-semibold
-                       text-accent-ink disabled:opacity-45">
-            {props.looking ? 'Looking…' : 'Find'}
-          </button>
-        </div>
-      </details>
+      <FromWebsite website={props.website} setWebsite={props.setWebsite}
+                   looking={props.looking} onFind={props.onFind} />
 
       {lookup && lookup.options.length > 0 && (
         <div className="mt-5">
@@ -373,11 +400,45 @@ function OwnDesign(props: {
       <Colours program={program} onColor={props.onColor} onTemplate={props.onTemplate} />
       <ShopName shopName={props.shopName} setShopName={props.setShopName}
                 onSaveName={props.onSaveName} />
-
-      <button onClick={props.onBack} className="mt-6 text-sm text-link hover:underline">
-        Use a ready-made card instead
-      </button>
     </Section>
+  )
+}
+
+/**
+ * Pulling the brand off their own website.
+ *
+ * A panel of its own, open, rather than a disclosure triangle. It is still a
+ * shortcut and not a route to depend on — if it misses, the owner has lost
+ * nothing, because the upload above it is the real path. But hiding the best
+ * trick we have behind a twisty arrow made it look like a footnote.
+ */
+function FromWebsite(
+  { website, setWebsite, looking, onFind }: {
+    website: string; setWebsite: (v: string) => void
+    looking: boolean; onFind: () => void
+  },
+) {
+  return (
+    <div className="mt-3 rounded-xl border border-line bg-surface-2 p-3.5">
+      <p className="text-[13.5px] font-semibold">Have a website?</p>
+      <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
+        Paste it and we will pull your logo and your colours straight off it.
+      </p>
+      <div className="mt-2.5 flex gap-2">
+        <input value={website} placeholder="yourshop.ca"
+               inputMode="url" autoCapitalize="off" autoCorrect="off" spellCheck={false}
+               className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2.5
+                          text-[14.5px] text-ink placeholder:text-faint transition-colors
+                          hover:border-faint focus:border-accent focus:outline-none"
+               onChange={(e) => setWebsite(e.target.value)}
+               onKeyDown={(e) => { if (e.key === 'Enter') onFind() }} />
+        <button onClick={onFind} disabled={looking || !website.trim()}
+          className="flex-none rounded-lg bg-accent px-4 py-2.5 text-[14px] font-semibold
+                     text-accent-ink transition-opacity disabled:opacity-40">
+          {looking ? 'Looking…' : 'Find'}
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -389,7 +450,6 @@ function UseTemplate(props: {
   uploading: boolean
   onUpload: (f: File) => void
   onTemplate: (t: (typeof CARD_TEMPLATES)[number]) => void
-  onBack: () => void
 }) {
   return (
     <Section title="Pick a card">
@@ -412,9 +472,9 @@ function UseTemplate(props: {
         })}
       </div>
 
-      <p className="mt-6 text-sm font-semibold">Add your logo</p>
+      <p className="mt-6 text-sm font-semibold">Add your logo<Optional /></p>
       <p className="mt-1 text-[12.5px] text-muted">
-        Optional. Your shop name shows on the card either way.
+        Your shop name shows on the card either way.
       </p>
       <label className="mt-2.5 flex cursor-pointer items-center justify-center rounded-xl
                         border border-dashed border-line px-4 py-5 text-sm text-muted
@@ -428,14 +488,18 @@ function UseTemplate(props: {
 
       <ShopName shopName={props.shopName} setShopName={props.setShopName}
                 onSaveName={props.onSaveName} />
-
-      <button onClick={props.onBack} className="mt-6 text-sm text-link hover:underline">
-        Design my own instead
-      </button>
     </Section>
   )
 }
 
+/**
+ * Colours.
+ *
+ * Open, in a panel of its own. Picking a palette is the part owners enjoy and
+ * the part that makes the card feel like theirs — burying it under a
+ * disclosure arrow saved forty pixels and cost the one interaction worth
+ * having.
+ */
 function Colours(
   { program, onColor, onTemplate }: {
     program: Program
@@ -444,38 +508,104 @@ function Colours(
   },
 ) {
   return (
-    <details className="mt-6">
-      <summary className="cursor-pointer text-sm font-semibold">
-        Colours <span className="font-normal text-muted">— change if you want to</span>
-      </summary>
-      <div className="mt-3 space-y-4 rounded-xl bg-surface-2 p-4">
-        <div className="flex flex-wrap gap-4">
+    <div className="mt-6">
+      <p className="text-sm font-semibold">
+        Colours<span className="ml-1.5 font-normal text-muted">— change any of these</span>
+      </p>
+      <div className="mt-2.5 rounded-xl border border-line bg-surface-2 p-4">
+        <span className="block text-[12.5px] text-muted">Start from one of ours</span>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {CARD_TEMPLATES.map((t) => {
+            const chosen = program.bg_color.toUpperCase() === t.bg
+            return (
+              <button key={t.id} onClick={() => onTemplate(t)} title={t.name}
+                className={`size-10 rounded-lg transition-shadow ${
+                  chosen ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface-2'
+                         : 'ring-1 ring-black/10 hover:ring-faint'}`}
+                style={{ backgroundColor: t.bg }} aria-label={t.name} />
+            )
+          })}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-5 border-t border-line pt-4">
           {([['bg_color', 'Card'], ['fg_color', 'Marks'], ['label_color', 'Labels']] as const)
             .map(([key, label]) => (
-            <label key={key} className="text-[13px]">
+            <label key={key} className="text-[12.5px]">
               <span className="block text-muted">{label}</span>
-              <input type="color" value={program[key]}
-                onChange={(e) => onColor(key, e.target.value.toUpperCase())}
-                className="mt-1 h-9 w-16 cursor-pointer rounded border-0 bg-transparent p-0" />
+              <span className="mt-1.5 flex items-center gap-2">
+                <input type="color" value={program[key]}
+                  onChange={(e) => onColor(key, e.target.value.toUpperCase())}
+                  className="size-9 cursor-pointer rounded-lg border-0 bg-transparent p-0" />
+                <span className="font-mono text-[11px] tabular text-faint">{program[key]}</span>
+              </span>
             </label>
           ))}
         </div>
-        <div>
-          <span className="block text-[12.5px] text-muted">Or start from one of ours</span>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {CARD_TEMPLATES.map((t) => (
-              <button key={t.id} onClick={() => onTemplate(t)} title={t.name}
-                className="size-9 rounded-lg ring-1 ring-black/10"
-                style={{ backgroundColor: t.bg }} aria-label={t.name} />
-            ))}
-          </div>
-        </div>
       </div>
-    </details>
+    </div>
   )
 }
 
 /* ------------------------------------------------------------- step two */
+
+/**
+ * The two shapes a stamp card comes in.
+ *
+ * Both take exactly the same number of paid visits. The only difference is
+ * whether the last box is another stamp or the prize — and that difference is
+ * the whole reason "buy 9, get the 10th free" is a sentence everybody already
+ * understands, while "collect 10 stamps" has to be explained at the counter.
+ */
+function CardShape(
+  { boxes, rewardInGrid, onPick }: {
+    boxes: number; rewardInGrid: boolean
+    onPick: (rewardInGrid: boolean) => void
+  },
+) {
+  const options = [
+    { value: true, title: `Buy ${boxes - 1}, get the ${boxes}th free`,
+      blurb: 'The last box holds the prize, like a paper punch card.' },
+    { value: false, title: `Collect ${boxes} stamps`,
+      blurb: 'Every box is a stamp. The reward comes after the last one.' },
+  ]
+  return (
+    <div className="space-y-2.5">
+      {options.map((o) => {
+        const chosen = rewardInGrid === o.value
+        return (
+          <button key={String(o.value)} onClick={() => onPick(o.value)}
+            className={`w-full rounded-xl border p-3.5 text-left transition-colors ${
+              chosen ? 'border-accent bg-accent-soft' : 'border-line hover:border-faint'}`}>
+            <span className="block text-[14px] font-semibold">{o.title}</span>
+            <span className="mt-0.5 block text-[12.5px] leading-snug text-muted">
+              {o.blurb}
+            </span>
+            <MiniGrid boxes={boxes} rewardInGrid={o.value} />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** The row of boxes, small — the shape of the deal without words. */
+function MiniGrid({ boxes, rewardInGrid }: { boxes: number; rewardInGrid: boolean }) {
+  const slots = Array.from({ length: Math.min(boxes, 12) })
+  return (
+    <span className="mt-2.5 flex flex-wrap items-center gap-1.5">
+      {slots.map((_, i) => (
+        rewardInGrid && i === slots.length - 1 ? (
+          <svg key={i} viewBox="0 0 100 100" className="size-4 text-accent" aria-hidden>
+            <path d="M5 30h90v20H5zM14 54h72v40H14zM50 30C41 28 29 23 29 14s12-9 21 16zM50 30C59 28 71 23 71 14s-12-9-21 16z"
+                  fill="currentColor" fillRule="evenodd" />
+          </svg>
+        ) : (
+          <span key={i} className="size-3 rounded-full border-[1.5px] border-faint" />
+        )
+      ))}
+    </span>
+  )
+}
 
 function TheDeal(
   { program, set, save }: {
@@ -484,9 +614,54 @@ function TheDeal(
     save: (patch: Record<string, unknown>, now?: boolean) => void
   },
 ) {
+  const boxes = cardBoxes(program.stamps_required, program.reward_in_grid)
+  const percentReward = /%/.test(program.reward_text)
+
+  /** The owner picks boxes — the thing anybody can count on the card. How many
+   *  visits it takes falls out of which shape they chose. */
+  function setBoxes(next: number, rewardInGrid = program.reward_in_grid) {
+    const required = rewardInGrid ? next - 1 : next
+    if (!Number.isFinite(required)) return
+    if (required < STAMPS_REQUIRED_MIN || required > STAMPS_REQUIRED_MAX) return
+    set('stamps_required', required)
+    set('reward_in_grid', rewardInGrid)
+    save({ stamps_required: required, reward_in_grid: rewardInGrid }, true)
+  }
+
   return (
     <Section title="Your reward" subtitle="What customers collect, and what they get for it.">
-      <p className="text-sm font-semibold">The stamp</p>
+      <p className="text-sm font-semibold">How the card works<Req /></p>
+      <div className="mt-2">
+        <CardShape boxes={boxes} rewardInGrid={program.reward_in_grid}
+                   onPick={(v) => setBoxes(boxes, v)} />
+      </div>
+
+      <p className="mt-6 text-sm font-semibold">Boxes on the card<Req /></p>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {BOX_CHOICES.map((n) => (
+          <button key={n} onClick={() => setBoxes(n)}
+            className={`rounded-lg border px-3.5 py-2 text-[13px] tabular transition-colors ${
+              boxes === n
+                ? 'border-accent bg-accent-soft font-semibold'
+                : 'border-line text-muted hover:border-faint'}`}>
+            {n}
+          </button>
+        ))}
+        <input type="number"
+          min={program.reward_in_grid ? STAMPS_REQUIRED_MIN + 1 : STAMPS_REQUIRED_MIN}
+          max={program.reward_in_grid ? STAMPS_REQUIRED_MAX + 1 : STAMPS_REQUIRED_MAX}
+          value={boxes}
+          onChange={(e) => setBoxes(Number(e.target.value))}
+          className="w-20 rounded-lg border border-line bg-surface-2 px-3 py-2
+                     text-[13px] tabular" />
+      </div>
+      <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
+        {dealLine(program.stamps_required, program.reward_in_grid)} — {program.stamps_required}
+        {' '}paid visits either way. Fewer brings people back sooner; more makes each
+        reward cost you less.
+      </p>
+
+      <p className="mt-6 text-sm font-semibold">The stamp<Req /></p>
       <div className="mt-2 grid grid-cols-3 gap-1.5">
         {STAMP_ICONS.map((icon) => (
           <button key={icon}
@@ -500,30 +675,7 @@ function TheDeal(
         ))}
       </div>
 
-      <p className="mt-6 text-sm font-semibold">How many to earn a reward</p>
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {STAMPS_REQUIRED_SUGGESTED.map((n) => (
-          <button key={n}
-            onClick={() => { set('stamps_required', n); save({ stamps_required: n }, true) }}
-            className={`rounded-lg border px-3.5 py-2 text-[13px] tabular transition-colors ${
-              program.stamps_required === n
-                ? 'border-accent bg-accent-soft font-semibold'
-                : 'border-line text-muted hover:border-faint'}`}>
-            {n}
-          </button>
-        ))}
-        <input type="number" min={STAMPS_REQUIRED_MIN} max={STAMPS_REQUIRED_MAX}
-          value={program.stamps_required}
-          onChange={(e) => { const n = Number(e.target.value)
-                             set('stamps_required', n); save({ stamps_required: n }) }}
-          className="w-20 rounded-lg border border-line bg-surface-2 px-3 py-2
-                     text-[13px] tabular" />
-      </div>
-      <p className="mt-1.5 text-[12.5px] text-muted">
-        Fewer brings people back sooner. More makes each reward cost you less.
-      </p>
-
-      <p className="mt-6 text-sm font-semibold">What they get</p>
+      <p className="mt-6 text-sm font-semibold">What they get<Req /></p>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {REWARD_PRESETS.map((r) => (
           <button key={r}
@@ -545,7 +697,7 @@ function TheDeal(
         narrow, so short wins.
       </p>
 
-      <p className="mt-6 text-sm font-semibold">What one reward costs you</p>
+      <p className="mt-6 text-sm font-semibold">What one reward costs you<Optional /></p>
       <div className="mt-2 flex items-center gap-2">
         <span className="text-muted">$</span>
         <input inputMode="decimal" placeholder="7.00"
@@ -555,9 +707,16 @@ function TheDeal(
           className="w-28 rounded-xl border border-line bg-surface-2 px-3 py-2.5
                      text-base tabular" />
       </div>
-      <p className="mt-1.5 text-[12.5px] text-muted">
-        Optional, and only you see it. It turns &ldquo;61 rewards redeemed&rdquo; into
-        &ldquo;$427 given away&rdquo;.
+      <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
+        {percentReward
+          // Say this plainly rather than let an owner trust a number we cannot
+          // stand behind: we do not see the till, so a percentage off is an
+          // average at best until a POS tells us what the bill was.
+          ? <>A percentage off depends on the bill, and we do not see the bill — so put
+              in what it usually works out to, or leave it blank. It only changes the
+              dollar figure on your dashboard; no customer sees it.</>
+          : <>Only you see it. It turns &ldquo;61 rewards redeemed&rdquo; into
+              &ldquo;$427 given away&rdquo;.</>}
       </p>
     </Section>
   )
@@ -565,19 +724,47 @@ function TheDeal(
 
 /* ----------------------------------------------------------- step three */
 
-function YourCode({ storeSlug, joinUrl }: { storeSlug: string; joinUrl: string }) {
+function YourCode(
+  { storeSlug, shopName, joinUrl }:
+  { storeSlug: string; shopName: string; joinUrl: string },
+) {
+  const src = `/api/print/qr/${storeSlug}.png`
+  // A filename an owner can still find in their Downloads folder two days later.
+  const filename = `${
+    shopName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'shop'
+  }-stamp-card-code.png`
+
   return (
     <Section title="You are live"
              subtitle="Print this and put it where customers can see it. They scan, the card lands in their phone — no app, no account.">
       <div className="overflow-hidden rounded-2xl border border-line">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/print/qr/${storeSlug}.png`} alt="Your counter code"
-             width={900} height={1200} className="w-full" />
+        <img src={src} alt="Your counter code" width={900} height={1200} className="w-full" />
       </div>
-      <a href={`/api/print/qr/${storeSlug}.png`} target="_blank" rel="noopener"
-         className="mt-3 block text-center text-sm text-link hover:underline">
-        Open full size to print
-      </a>
+
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        {/* Same origin, so `download` saves the full 900x1200 file rather than
+            opening it in a tab — one tap, on a phone as well as a laptop. */}
+        <a href={src} download={filename}
+           className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl
+                      bg-accent px-4 py-3 text-[14.5px] font-semibold text-accent-ink">
+          <svg viewBox="0 0 20 20" className="size-4" aria-hidden>
+            <path d="M10 3v9m0 0 3.5-3.5M10 12 6.5 8.5M4 16h12"
+                  fill="none" stroke="currentColor" strokeWidth="1.7"
+                  strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Download to print
+        </a>
+        <a href={src} target="_blank" rel="noopener"
+           className="inline-flex flex-1 items-center justify-center rounded-xl border
+                      border-line px-4 py-3 text-[14.5px] font-medium text-muted
+                      transition-colors hover:bg-surface-2 hover:text-ink">
+          Open full size
+        </a>
+      </div>
+      <p className="mt-2 text-center text-[12px] text-faint">
+        900 × 1200 — sharp printed at postcard size.
+      </p>
 
       <p className="mt-6 text-[13px] text-muted">Your join page</p>
       <code className="mt-1 block break-all rounded-lg bg-surface-2 px-3 py-2
@@ -585,8 +772,8 @@ function YourCode({ storeSlug, joinUrl }: { storeSlug: string; joinUrl: string }
 
       <div className="mt-5 flex flex-col gap-2.5">
         <a href={`/j/${storeSlug}`} target="_blank" rel="noopener"
-           className="rounded-xl bg-accent px-4 py-3.5 text-center text-base font-semibold
-                      text-accent-ink">
+           className="rounded-xl border border-line px-4 py-3.5 text-center text-base
+                      font-medium">
           See what customers see
         </a>
         <a href="/dashboard"

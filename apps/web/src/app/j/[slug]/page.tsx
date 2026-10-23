@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { stripPath } from '@wl/shared'
+import { stripPath, dealLine } from '@wl/shared'
 import { storeBySlug } from '@/lib/join'
 import { POWERED_BY } from '@/lib/product'
 import JoinForm from './JoinForm'
@@ -48,7 +48,7 @@ export default async function JoinPage(
           {program.reward_text}
         </p>
         <p className="mt-2 text-center text-sm" style={{ color: program.label_color }}>
-          Collect {program.stamps_required} stamps
+          {dealLine(program.stamps_required, program.reward_in_grid)}
           {program.join_bonus > 0 && ` — your first one is on us`}
         </p>
 
@@ -56,7 +56,7 @@ export default async function JoinPage(
         <div className="mt-8 overflow-hidden rounded-2xl shadow-lg ring-1 ring-black/10"
              style={{ backgroundColor: program.bg_color }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={previewStrip} alt={`${program.stamps_required} stamp card`}
+          <img src={previewStrip} alt={dealLine(program.stamps_required, program.reward_in_grid)}
                width={375} height={98} className="w-full" />
         </div>
 

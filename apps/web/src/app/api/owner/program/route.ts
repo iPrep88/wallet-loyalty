@@ -28,6 +28,7 @@ interface Patch {
   label_color?: string
 
   stamps_required?: number
+  reward_in_grid?: boolean
   reward_text?: string
   reward_value?: string      // dollars, as typed
 
@@ -74,6 +75,12 @@ export async function PUT(req: Request) {
         `Stamps must be between ${STAMPS_REQUIRED_MIN} and ${STAMPS_REQUIRED_MAX}.`)
     }
     patch.stamps_required = n
+  }
+  if (input.reward_in_grid !== undefined) {
+    if (typeof input.reward_in_grid !== 'boolean') {
+      return err('bad_request', 'Pick one of the two card shapes.')
+    }
+    patch.reward_in_grid = input.reward_in_grid
   }
   if (input.reward_text !== undefined) {
     if (!isValidRewardText(input.reward_text)) {

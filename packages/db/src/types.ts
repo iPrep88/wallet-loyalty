@@ -53,6 +53,8 @@ export interface Program {
   id: string
   company_id: string
   stamps_required: number
+  /** True when the last box on the card is the reward, not another stamp. */
+  reward_in_grid: boolean
   reward_text: string
   reward_value_cents: number | null
   join_bonus: number

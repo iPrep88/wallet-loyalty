@@ -2,6 +2,7 @@ import QRCode from 'qrcode'
 import sharp from 'sharp'
 import { one } from '@wl/db'
 import { contrastRatio } from '@wl/passes/colors'
+import { dealQualifier } from '@wl/shared/rewards'
 
 /**
  * The counter stand — the single most important printed object in the
@@ -33,12 +34,14 @@ export async function GET(
     company_name: string
     reward_text: string
     stamps_required: number
+    reward_in_grid: boolean
     bg_color: string
     fg_color: string
     label_color: string
   }>(
     `select s.name as store_name, c.name as company_name,
-            p.reward_text, p.stamps_required, p.bg_color, p.fg_color, p.label_color
+            p.reward_text, p.stamps_required, p.reward_in_grid,
+            p.bg_color, p.fg_color, p.label_color
        from stores s
        join companies c on c.id = s.company_id
        join programs  p on p.company_id = c.id
@@ -76,7 +79,7 @@ export async function GET(
       >${esc(fit(row.reward_text, 24))}</text>
     <text x="${W / 2}" y="1032" text-anchor="middle" fill="${row.label_color}"
           font-family="${FONT}" font-size="30"
-      >after ${row.stamps_required} stamps</text>
+      >${esc(dealQualifier(row.stamps_required, row.reward_in_grid))}</text>
     <text x="${W / 2}" y="1126" text-anchor="middle" fill="${row.label_color}"
           font-family="${FONT}" font-size="22" opacity="0.6"
       >No app. No account. Just scan.</text>

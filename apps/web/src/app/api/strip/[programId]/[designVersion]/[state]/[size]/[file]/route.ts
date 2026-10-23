@@ -74,6 +74,7 @@ export async function GET(
   const png = await renderStrip({
     stamps: count,
     stampsRequired: program.stamps_required,
+    rewardInGrid: program.reward_in_grid,
     state: state as CardState,
     style: program.card_style as CardStyle,
     photo,

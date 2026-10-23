@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import { iconPath } from './stamp-icons'
+import { iconPath, REWARD_PATH } from './stamp-icons'
 import type { StripRequest } from './types'
 
 /**
@@ -120,13 +120,20 @@ function defs(mark: string, w: number, h: number): string {
     + `</defs>`
 }
 
+/** Outline weight for an icon, in the icon's own 100-unit box. */
+const ICON_STROKE = 4.5
+
 function stampRow(req: StripRequest, w: number, h: number, mark: string): string {
-  const { stamps, stampsRequired, icon, state } = req
+  const { stamps, stampsRequired, icon, state, rewardInGrid } = req
   const ready = state === 'reward_ready'
 
+  // A card that ends in the prize has one more box than it has stamps — nine
+  // slots and a present, the way a paper punch card is printed.
+  const cells = stampsRequired + (rewardInGrid ? 1 : 0)
+
   // Two rows only when a single one would make the marks too small to read.
-  const rows = stampsRequired > 12 ? 2 : 1
-  const perRow = Math.ceil(stampsRequired / rows)
+  const rows = cells > 12 ? 2 : 1
+  const perRow = Math.ceil(cells / rows)
 
   const padX = w * 0.055
   const cellW = (w - padX * 2) / perRow
@@ -139,12 +146,31 @@ function stampRow(req: StripRequest, w: number, h: number, mark: string): string
   const topOffset = (h - cellH * rows) / 2
   const out: string[] = []
 
-  for (let i = 0; i < stampsRequired; i++) {
+  for (let i = 0; i < cells; i++) {
     const row = Math.floor(i / perRow)
     const col = i % perRow
-    const cx = padX + cellW * col + cellW / 2
+    // A last row that is short is centred, not left-aligned against a hole.
+    const inRow = row === rows - 1 ? cells - perRow * (rows - 1) : perRow
+    const cx = (w - cellW * inRow) / 2 + cellW * col + cellW / 2
     const cy = topOffset + cellH * row + cellH / 2
-    const filled = ready || i < stamps
+    const isReward = rewardInGrid && i === cells - 1
+    // The present only lights up once the card is actually finished; the
+    // stamps light up as they land.
+    const filled = isReward ? ready : ready || i < stamps
+
+    if (isReward) {
+      // A little larger than a stamp, because it is the point of the card.
+      const rs = size * 1.08
+      const t = `translate(${n(cx - rs / 2)} ${n(cy - rs / 2)}) scale(${n(rs / 100, 5)})`
+      out.push(filled
+        ? `<g transform="${t}"><path d="${REWARD_PATH}" fill="${mark}"`
+          + ` fill-rule="evenodd"/></g>`
+        : `<g transform="${t}"><path d="${REWARD_PATH}" fill="none"`
+          + ` stroke="${mark}" stroke-opacity="0.55"`
+          + ` stroke-width="${ICON_STROKE}" stroke-linejoin="round"`
+          + ` fill-rule="evenodd"/></g>`)
+      continue
+    }
 
     if (icon === 'circle') {
       out.push(filled
@@ -163,10 +189,13 @@ function stampRow(req: StripRequest, w: number, h: number, mark: string): string
     out.push(filled
       ? `<g transform="${transform}"><path d="${iconPath(icon)}" fill="${mark}"`
         + ` fill-rule="evenodd"/></g>`
-      // Outlined rather than faded, for the same reason as the circles.
+      // Outlined rather than faded, for the same reason as the circles — but
+      // at a lighter weight. A ring only has one edge to thicken; an icon has
+      // chopsticks nine units apart and segment slivers six units wide, and a
+      // circle's stroke weight bleeds those shut into a blob.
       : `<g transform="${transform}"><path d="${iconPath(icon)}" fill="none"`
         + ` stroke="${mark}" stroke-opacity="0.42"`
-        + ` stroke-width="${n(stroke / unit)}" stroke-linejoin="round"`
+        + ` stroke-width="${ICON_STROKE}" stroke-linejoin="round"`
         + ` fill-rule="evenodd"/></g>`)
   }
 

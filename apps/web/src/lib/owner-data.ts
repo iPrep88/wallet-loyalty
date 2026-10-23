@@ -37,7 +37,8 @@ export async function ownerContext(): Promise<OwnerContext | null> {
 
 /** Fields whose change alters how the card looks, and so must bust its cache. */
 const VISUAL_FIELDS = [
-  'stamps_required', 'reward_text', 'card_style', 'stamp_icon', 'stamp_icon_url',
+  'stamps_required', 'reward_in_grid', 'reward_text', 'card_style', 'stamp_icon',
+  'stamp_icon_url',
   'logo_url', 'photo_url', 'bg_color', 'fg_color', 'label_color',
 ] as const
 

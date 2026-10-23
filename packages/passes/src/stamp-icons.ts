@@ -22,27 +22,59 @@ const PATHS: Record<Exclude<StampIcon, 'custom'>, string> = {
     'M22 20h56l-3 10H25zM27 34h46l-6 54a6 6 0 0 1-6 5H39a6 6 0 0 1-6-5z'
     + 'M40 74a5 5 0 1 0 0.1 0zM54 78a5 5 0 1 0 0.1 0zM47 66a5 5 0 1 0 0.1 0z',
 
-  // A noodle bowl, seen from the side: a wide bowl with steam above it.
+  // A noodle bowl with chopsticks lifting a strand out of it.
+  //
+  // Every subpath here is a closed shape, not a line. A collected stamp is
+  // drawn fill-only, so a chopstick described as a stroke renders as nothing —
+  // which is exactly how the first two attempts at this icon lost their
+  // chopsticks and went back to reading as a cup of soup.
   bowl:
-    'M8 42h84c0 28-19 48-42 48S8 70 8 42z'
-    + 'M30 30c-6-7-6-13 0-20M50 26c-6-7-6-13 0-20M70 30c-6-7-6-13 0-20',
+    // the bowl
+    'M7 50h86c0 23-19 42-43 42S7 73 7 50z'
+    // two chopsticks, as slim quadrilaterals angled out to the upper right
+    + 'M41 47 83 9l5 5-42 38z'
+    + 'M50 54 92 16l5 5-42 38z'
+    // a strand draping off them back down toward the bowl
+    + 'M57 36c-8 11-7 22 3 30l-6 4c-13-10-14-25-4-38z',
 
-  // A croissant: a thick crescent with pointed tips. Fine detail is wasted
-  // at 25 pixels across, so this is the silhouette and nothing else — the
-  // first attempt had horns and curls and read as a moustache.
+  // A croissant: a fat crescent with three segment slivers cut through it.
+  // The slivers are closed shapes so that fill-rule evenodd punches them out
+  // of the body on a collected stamp, and draws them as lines on an empty one.
+  // The first attempt was a smooth arc and read as a banana; the second put
+  // the segments in as open lines, so they vanished when filled.
   croissant:
-    'M14 72C14 36 32 16 50 16s36 20 36 56c-9-15-21-23-36-23s-27 8-36 23z',
+    'M6 76C6 34 26 13 50 13s44 21 44 63c-10-19-25-29-44-29S16 57 6 76z'
+    + 'M27 24l5 2-3 30-5-2z'
+    + 'M47 17h6v31h-6z'
+    + 'M68 26l5-2 3 30-5 2z',
 
   // A scoop in a cone.
   scoop:
     'M50 12a26 26 0 0 1 26 26H24a26 26 0 0 1 26-26z'
     + 'M26 44h48L50 94z',
 
-  // A coffee bean: ellipse with the centre crease.
+  // A coffee bean: ellipse with the centre crease. The crease is a closed
+  // sliver for the same reason the croissant's segments are.
   bean:
     'M50 8c20 0 36 19 36 42S70 92 50 92 14 73 14 50 30 8 50 8z'
-    + 'M50 14c-7 9-7 27 0 36s7 27 0 36',
+    + 'M53 13c-8 11-8 28 0 37s8 26 0 37l-6-3c7-10 7-25 0-34s-7-27 0-38z',
 }
+
+/**
+ * The mark for the reward box — the last cell on a card that ends in the prize
+ * rather than in another stamp. Deliberately not one of the stamp icons: the
+ * whole point of the last box is that it is not the same as the nine before
+ * it. A present reads as "the thing you are working towards" to anyone,
+ * in any language, at the size of a fingernail.
+ */
+export const REWARD_PATH =
+  // lid
+  'M5 30h90v20H5z'
+  // box, sitting just under the lid so the gap gives it an edge
+  + 'M14 54h72v40H14z'
+  // the bow, two loops above the lid
+  + 'M50 30C41 28 29 23 29 14s12-9 21 16z'
+  + 'M50 30C59 28 71 23 71 14s-12-9-21 16z'
 
 export function iconPath(icon: StampIcon): string {
   return icon === 'custom' ? PATHS.circle : PATHS[icon]

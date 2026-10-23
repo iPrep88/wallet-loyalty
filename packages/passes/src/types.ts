@@ -20,6 +20,8 @@ export interface StripRequest {
   style?: CardStyle
   /** For style 'photo': the merchant's picture, already loaded. */
   photo?: Buffer
+  /** True when the last box on the card is the reward, not another stamp. */
+  rewardInGrid?: boolean
   /** 1, 2 or 3 for Apple's @Nx variants. */
   scale?: number
 }
