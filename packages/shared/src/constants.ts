@@ -107,14 +107,28 @@ export const BROADCASTS_PER_MONTH = { basic: 4, pro: 30 } as const
  * Each is a finished combination rather than a colour to start from — picking
  * any of them produces a card that looks deliberate, which matters more than
  * choice. An owner who makes an ugly card puts the QR stand in a drawer.
+ *
+ * The first set was five near-blacks and one bone, which was the SAFE choice
+ * rather than the good one: any logo sits on near-black without clashing, and
+ * a dark card hides the seams in artwork we generated ourselves. But five
+ * dark cards in a row read as one card in five shades of mud, and the brands
+ * that actually look expensive — the skincare shelf, the good hotel, the
+ * third-wave cafe — are mostly light and warm.
+ *
+ * So: two darks that earn their place, and four light ones. Every pairing
+ * clears 10:1 on the marks and 4:1 on the labels, checked rather than
+ * eyeballed, because these go on a phone held at arm's length in a shop with
+ * the lights down.
  */
 export const CARD_TEMPLATES = [
   { id: 'ink',       name: 'Ink',       bg: '#14181F', fg: '#F2F4F7', label: '#8E97A3' },
   { id: 'porcelain', name: 'Porcelain', bg: '#F7F6F3', fg: '#1C1E22', label: '#6B6F76' },
-  { id: 'pine',      name: 'Pine',      bg: '#14342B', fg: '#E8F1EC', label: '#8FAFA0' },
-  { id: 'harbour',   name: 'Harbour',   bg: '#15293D', fg: '#E6EEF6', label: '#8FA6BC' },
-  { id: 'plum',      name: 'Plum',      bg: '#2A1A2E', fg: '#F3E8F5', label: '#A992AE' },
-  { id: 'ember',     name: 'Ember',     bg: '#2E1A14', fg: '#F7EAE3', label: '#BC9B8D' },
+  { id: 'sand',      name: 'Sand',      bg: '#E9E1D5', fg: '#2A2520', label: '#6B6256' },
+  { id: 'blush',     name: 'Blush',     bg: '#F2DEE1', fg: '#46252E', label: '#85606A' },
+  { id: 'sage',      name: 'Sage',      bg: '#D9E1D6', fg: '#1F2E1D', label: '#5C6B59' },
+  // Navy and warm gold: the oldest premium-card trick there is, and still
+  // the one people read as expensive without being told to.
+  { id: 'midnight',  name: 'Midnight',  bg: '#0E1F3C', fg: '#E9CB8E', label: '#8FA4C2' },
 ] as const
 
 export type CardTemplateId = (typeof CARD_TEMPLATES)[number]['id']
