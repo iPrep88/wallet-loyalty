@@ -3,7 +3,7 @@ import { BRAND, UNVERIFIED } from './_brand'
 import { AddToWallet, FakeQr, Phone, PhotoSlot, StatusBar, WalletCard } from './_marketing'
 
 export const metadata = {
-  title: 'VIZIS — Loyalty cards that live in the wallet',
+  title: 'REPIO — Loyalty cards that live in the wallet',
   description:
     'Loyalty cards built into Apple Wallet and Google Wallet. No app, no account, '
   + 'just more repeat customers.',
@@ -39,7 +39,7 @@ function Nav() {
     <header className="absolute inset-x-0 top-0 z-20">
       <div className={`${CONTAINER} flex h-[72px] items-center justify-between gap-6`}>
         <span className="text-[15px] font-bold tracking-[0.3em]" style={{ color: BRAND.white }}>
-          VIZIS
+          REPIO
         </span>
         <nav className="hidden items-center gap-8 text-[13.5px] font-medium md:flex"
              style={{ color: 'rgba(232,244,255,.72)' }}>
@@ -344,7 +344,7 @@ function DashboardMock() {
                   boxShadow: '0 30px 60px -35px rgba(11,27,43,.35)' }}>
       <div className="flex items-center justify-between px-5 py-3.5"
            style={{ borderBottom: `1px solid ${BRAND.border}` }}>
-        <span className="text-[11px] font-bold tracking-[0.28em]">VIZIS</span>
+        <span className="text-[11px] font-bold tracking-[0.28em]">REPIO</span>
         <span className="size-5 rounded-full" style={{ background: BRAND.paleIce }} />
       </div>
       <div className="grid gap-0 sm:grid-cols-[136px_1fr]">
@@ -510,7 +510,7 @@ function Proof() {
           </h2>
           <p className="mt-4 text-[14.5px] leading-[1.65]"
              style={{ color: 'rgba(232,244,255,.62)' }}>
-            From independent cafés to high-end restaurants, VIZIS helps businesses turn
+            From independent cafés to high-end restaurants, REPIO helps businesses turn
             first-time visitors into lifelong customers.
           </p>
           <Link href="/signup"
@@ -589,7 +589,7 @@ function Footer() {
     <footer style={{ background: BRAND.midnight }}>
       <div className={`${CONTAINER} flex flex-wrap items-center justify-between gap-5 py-10`}>
         <span className="text-[13px] font-bold tracking-[0.3em]" style={{ color: BRAND.white }}>
-          VIZIS
+          REPIO
         </span>
         <nav className="flex flex-wrap gap-6 text-[12.5px]"
              style={{ color: 'rgba(232,244,255,.55)' }}>
@@ -598,7 +598,7 @@ function Footer() {
           ))}
         </nav>
         <span className="text-[12px]" style={{ color: 'rgba(232,244,255,.4)' }}>
-          © {new Date().getFullYear()} VIZIS
+          © {new Date().getFullYear()} REPIO
         </span>
       </div>
     </footer>

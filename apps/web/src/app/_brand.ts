@@ -39,7 +39,7 @@ export const UNVERIFIED = {
   repeatLift: '40%',
   testimonial: {
     quote:
-      'VIZIS has completely changed how we think about customer retention. '
+      'REPIO has completely changed how we think about customer retention. '
       + "It's simple, elegant, and our customers love it.",
     name: 'Sarah K.',
     role: 'Owner, Maison Coffee & Patisserie',

@@ -133,7 +133,7 @@ export async function safeFetch(rawUrl: string | URL): Promise<SafeFetchResult> 
           // string is refused outright by a lot of small-business hosting
           // and by the firewalls sitting in front of it.
           'User-Agent':
-            'Mozilla/5.0 (compatible; VizisBrandBot/1.0; +https://loyalty.iprep.ca)',
+            'Mozilla/5.0 (compatible; RepioBrandBot/1.0; +https://tryrepio.com)',
           Accept: 'text/html,application/xhtml+xml,image/*;q=0.9,*/*;q=0.5',
           'Accept-Language': 'en-CA,en;q=0.9',
         },

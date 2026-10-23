@@ -1,4 +1,4 @@
-# Vizis — loyalty cards in the wallet
+# Repio — loyalty cards in the wallet
 
 Digital stamp cards for small shops, living in Apple Wallet and Google Wallet.
 Customers never download an app or make an account.
