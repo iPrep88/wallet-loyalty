@@ -68,7 +68,10 @@ export default async function JoinPage(
             {program.back_terms}
           </p>
         )}
-        <p className="mt-6 text-center text-[11px] opacity-50">{POWERED_BY}</p>
+        <p className="mt-6 text-center text-[11px] opacity-50">
+          {POWERED_BY} ·{' '}
+          <a href="/legal/privacy" className="underline">Privacy</a>
+        </p>
       </div>
     </main>
   )

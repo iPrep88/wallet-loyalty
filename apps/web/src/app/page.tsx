@@ -609,8 +609,13 @@ function Footer() {
         </span>
         <nav className="flex flex-wrap gap-6 text-[12.5px]"
              style={{ color: 'rgba(232,244,255,.55)' }}>
-          {['Features', 'Pricing', 'Examples', 'Privacy', 'Terms'].map((l) => (
-            <a key={l} href={`#${l.toLowerCase()}`} className="hover:text-white">{l}</a>
+          {[
+            ['Features', '#features'],
+            ['Pricing', '#pricing'],
+            ['Privacy', '/legal/privacy'],
+            ['Terms', '/legal/terms'],
+          ].map(([label, href]) => (
+            <a key={label} href={href} className="hover:text-white">{label}</a>
           ))}
         </nav>
         <span className="text-[12px]" style={{ color: 'rgba(232,244,255,.4)' }}>

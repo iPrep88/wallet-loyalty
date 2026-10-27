@@ -56,6 +56,16 @@ export default function SignupPage() {
             {busy ? 'Creating your shop…' : 'Create my shop'}
           </Button>
 
+          {/* Under the button that forms the agreement, not buried in a
+              footer. Someone handing us their customers' phone numbers is
+              entitled to see what they are agreeing to before they agree. */}
+          <p className="text-center text-[12.5px] leading-snug text-muted">
+            By creating a shop you agree to our{' '}
+            <Link href="/legal/terms" className="text-link hover:underline">Terms</Link>
+            {' '}and{' '}
+            <Link href="/legal/privacy" className="text-link hover:underline">Privacy policy</Link>.
+          </p>
+
           {error && <Notice tone="error">{error}</Notice>}
         </form>
       </Card>
