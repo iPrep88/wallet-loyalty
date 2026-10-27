@@ -885,10 +885,27 @@ function AtTheCounter({ storeSlug }: { storeSlug: string }) {
           </li>
         ))}
       </ol>
-      <a href={`/scan?store=${storeSlug}`} target="_blank" rel="noopener"
-         className="mt-3.5 inline-block text-[13.5px] font-semibold text-link hover:underline">
-        Open the scanner →
-      </a>
+      {/* The owner is at a laptop; the scanner has to end up on the phone that
+          lives at the till. Nobody types a URL with a query string into a
+          phone keyboard, so this is the bridge. */}
+      <div className="mt-4 flex gap-4 rounded-xl border border-line bg-surface-2 p-3.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`/api/print/scanner/${storeSlug}.png`} alt=""
+             width={120} height={120}
+             className="size-[108px] flex-none rounded-lg bg-white p-1.5" />
+        <div className="min-w-0">
+          <p className="text-[13.5px] font-semibold">Get it onto the counter phone</p>
+          <p className="mt-1 text-[12.5px] leading-snug text-muted">
+            Scan this with the phone or tablet that will live at your till. It
+            opens the scanner, and from there you can add it to the home screen
+            so it works like any other app.
+          </p>
+          <a href={`/scan?store=${storeSlug}`} target="_blank" rel="noopener"
+             className="mt-2 inline-block text-[13px] font-semibold text-link hover:underline">
+            Or open it here →
+          </a>
+        </div>
+      </div>
     </div>
   )
 }

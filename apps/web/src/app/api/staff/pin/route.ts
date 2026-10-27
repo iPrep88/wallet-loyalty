@@ -1,6 +1,6 @@
 import { one } from '@wl/db'
 import { authenticatePin } from '@/lib/staff-auth'
-import { setStaffCookie } from '@/lib/session'
+import { currentStaff, setStaffCookie } from '@/lib/session'
 import { body, err, ok } from '@/lib/http'
 
 interface Req { slug: string; deviceId: string; pin: string }
@@ -36,4 +36,19 @@ export async function POST(req: Request) {
     staff: { id: result.staff.id, name: result.staff.name },
     store: `${store.company_name} — ${store.name}`,
   })
+}
+
+/**
+ * Am I still signed in?
+ *
+ * The scanner opened on the PIN screen every single time, even with a valid
+ * session sitting in the cookie — so staff retyped their code on every visit,
+ * which is most of why a shop would call the web version annoying. A session
+ * still lasts one shift and no longer: a shared till should not stay open for
+ * ever, and every stamp has to carry the name of whoever actually gave it.
+ */
+export async function GET() {
+  const staff = await currentStaff()
+  if (!staff) return err('bad_pin', 'Not signed in.')
+  return ok({ staff: { name: staff.staffName }, store: staff.storeName })
 }

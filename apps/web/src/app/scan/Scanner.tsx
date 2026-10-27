@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import InstallPrompt from './InstallPrompt'
 
 const UNDO_WINDOW = 30
 const MAX_QUANTITY = 10
@@ -25,6 +26,7 @@ interface MemberSummary {
 type View =
   | { kind: 'pin' }
   | { kind: 'camera' }
+  | { kind: 'checking' }
   | { kind: 'confirm'; token: string; member: MemberSummary }
   | { kind: 'done'; member: MemberSummary; eventId: string | null; note: string }
 
@@ -43,12 +45,36 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
   const [slug, setSlug] = useState(defaultSlug)
   const [pin, setPin] = useState('')
   const [staffName, setStaffName] = useState<string | null>(null)
-  const [view, setView] = useState<View>({ kind: 'pin' })
+  // 'checking' rather than 'pin': the session may already be good, and
+  // flashing the PIN screen before deciding looks like being signed out.
+  const [view, setView] = useState<View>({ kind: 'checking' })
   const [quantity, setQuantity] = useState(1)
   const [manualToken, setManualToken] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [undoLeft, setUndoLeft] = useState(0)
+
+  // Already signed in? Go straight to the camera. Without this the scanner
+  // opened on the PIN screen every time, valid session or not.
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch('/api/staff/pin')
+        const data = await res.json() as {
+          ok: boolean; staff?: { name: string }; store?: string
+        }
+        if (cancelled) return
+        if (data.ok && data.staff) {
+          setStaffName(data.staff.name)
+          setView({ kind: 'camera' })
+          return
+        }
+      } catch { /* offline, or no session: fall through to the PIN screen */ }
+      if (!cancelled) setView({ kind: 'pin' })
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   // The 30-second undo countdown.
   useEffect(() => {
@@ -121,9 +147,18 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
   }
 
   // ------------------------------------------------------------------ render
+  if (view.kind === 'checking') {
+    return (
+      <Shell title="Repio">
+        <p className="text-sm text-muted">One moment…</p>
+      </Shell>
+    )
+  }
+
   if (view.kind === 'pin') {
     return (
       <Shell title="Staff sign in">
+        <InstallPrompt />
         <label className="block text-sm text-muted">
           Shop
           <input
@@ -156,6 +191,7 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
   if (view.kind === 'camera') {
     return (
       <Shell title="Scan a card" subtitle={staffName ? `Signed in as ${staffName}` : undefined}>
+        <InstallPrompt />
         <CameraReader onToken={resolveToken} />
         <div className="mt-6 border-t border-line pt-6">
           <label className="block text-sm text-muted">
