@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BRAND, UNVERIFIED } from './_brand'
+import { BRAND } from './_brand'
 import { AddToWallet, FakeQr, Phone, PhotoSlot, StatusBar, WalletCard } from './_marketing'
 import { MARK } from '@wl/shared/mark'
 
@@ -132,11 +132,14 @@ function Hero() {
             </a>
           </div>
 
+          {/* Three things that are true today. There were three invented
+              numbers here — businesses onboarded, visits tracked, a lift in
+              repeat customers — and a shop owner checks that sort of claim. */}
           <dl className="mt-12 flex flex-wrap gap-x-10 gap-y-6">
             {[
-              [UNVERIFIED.businesses, 'Businesses onboarded'],
-              [UNVERIFIED.visits, 'Visits tracked'],
-              [UNVERIFIED.repeatLift, 'Average increase in repeat customers'],
+              ['$9.99', 'Per location, per month'],
+              ['No app', 'Nothing for your customers to download'],
+              ['No card', 'First month free, no payment details'],
             ].map(([value, label]) => (
               <div key={label} className="max-w-[9.5rem]">
                 <dt className="text-[26px] font-extrabold tracking-[-0.03em] tabular"
@@ -506,8 +509,16 @@ function Examples() {
 }
 
 /* ----------------------------------------------------------------- proof */
+
+/**
+ * What used to be here: a testimonial from a café owner who does not exist,
+ * and two invented retention figures.
+ *
+ * Being new is not a thing to paper over. A shop owner who is told the truth
+ * and offered the owner's phone number is a better prospect than one who
+ * later works out the quote was made up.
+ */
 function Proof() {
-  const { testimonial, repeatRate, visitsPerCustomer } = UNVERIFIED
   return (
     <section className="relative overflow-hidden" style={{ background: BRAND.midnight }}>
       <PhotoSlot label="interior-wide" className="absolute inset-0" />
@@ -516,18 +527,19 @@ function Proof() {
              `linear-gradient(90deg, ${BRAND.midnight} 12%, rgba(6,21,37,.72) 55%, rgba(6,21,37,.9) 100%)` }} />
 
       <div className={`${CONTAINER} relative grid gap-10 py-20 sm:py-24
-                       lg:grid-cols-[minmax(0,19rem)_1fr_minmax(0,11rem)] lg:items-center`}>
+                       lg:grid-cols-[minmax(0,26rem)_1fr] lg:items-center`}>
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em]"
-             style={{ color: 'rgba(139,200,255,.75)' }}>Trusted by businesses like yours</p>
+             style={{ color: 'rgba(139,200,255,.75)' }}>Early access</p>
           <h2 className="mt-4 text-[clamp(1.7rem,4vw,2.2rem)] font-extrabold leading-[1.12]
                          tracking-[-0.03em]" style={{ color: BRAND.white }}>
-            Real businesses.<br />Real results.
+            New here.<br />Looking for our first shops.
           </h2>
           <p className="mt-4 text-[14.5px] leading-[1.65]"
              style={{ color: 'rgba(232,244,255,.62)' }}>
-            From independent cafés to high-end restaurants, REPIO helps businesses turn
-            first-time visitors into lifelong customers.
+            Repio is built and running in Toronto. We are signing up the first
+            independent cafés, bakeries and bubble tea shops now — so you would be
+            early, and you would be talking to the person who built it.
           </p>
           <Link href="/signup"
                 className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-3 text-[14.5px]
@@ -537,34 +549,21 @@ function Proof() {
           </Link>
         </div>
 
-        <figure>
-          <blockquote className="text-[17px] font-medium italic leading-[1.6]"
-                      style={{ color: BRAND.white }}>
-            &ldquo;{testimonial.quote}&rdquo;
-          </blockquote>
-          <figcaption className="mt-5 flex items-center gap-3">
-            <span className="size-9 flex-none rounded-full"
-                  style={{ background: BRAND.navy }} data-photo-slot="testimonial-avatar" />
-            <span className="text-[12.5px] leading-snug">
-              <span className="block font-semibold" style={{ color: BRAND.white }}>
-                {testimonial.name}
-              </span>
-              <span style={{ color: 'rgba(232,244,255,.55)' }}>{testimonial.role}</span>
-            </span>
-          </figcaption>
-        </figure>
-
-        <dl className="flex gap-10 lg:flex-col lg:gap-8">
-          {[[repeatRate, 'Repeat customer rate (after 3 months)'],
-            [visitsPerCustomer, 'More visits per customer']].map(([v, l]) => (
-            <div key={l}>
-              <dt className="text-[30px] font-extrabold tracking-[-0.035em] tabular"
-                  style={{ color: BRAND.white }}>{v}</dt>
-              <dd className="mt-1 text-[11.5px] leading-snug"
-                  style={{ color: 'rgba(232,244,255,.55)' }}>{l}</dd>
-            </div>
+        <ul className="space-y-4 text-[14.5px] leading-snug lg:max-w-[22rem]"
+            style={{ color: 'rgba(232,244,255,.78)' }}>
+          {[
+            'Your card, in your colours, built from your logo',
+            'Nothing for your customers to install',
+            'One code on the counter — they scan, and they are in',
+            'Cancel whenever. Your customer list leaves with you',
+          ].map((line) => (
+            <li key={line} className="flex gap-3">
+              <span aria-hidden className="mt-[0.45em] size-1.5 flex-none rounded-full"
+                    style={{ background: BRAND.brightBlue }} />
+              {line}
+            </li>
           ))}
-        </dl>
+        </ul>
       </div>
     </section>
   )

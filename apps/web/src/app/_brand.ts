@@ -22,28 +22,3 @@ export const BRAND = {
   slate:      '#667789',
   border:     '#DFE6EC',
 } as const
-
-/**
- * Numbers and quotes that are not true yet.
- *
- * Every value here is invented. They are kept in one place, named like this,
- * so that nobody can ship them by accident — a made-up testimonial from a
- * made-up café owner is the kind of thing a shop owner checks, and the product
- * does not need it.
- *
- * Replace with real figures once there are some, or delete the sections.
- */
-export const UNVERIFIED = {
-  businesses: '1,500+',
-  visits: '3.2M+',
-  repeatLift: '40%',
-  testimonial: {
-    quote:
-      'REPIO has completely changed how we think about customer retention. '
-      + "It's simple, elegant, and our customers love it.",
-    name: 'Sarah K.',
-    role: 'Owner, Maison Coffee & Patisserie',
-  },
-  repeatRate: '+45%',
-  visitsPerCustomer: '2.8x',
-} as const
