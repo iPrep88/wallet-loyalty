@@ -1,5 +1,7 @@
 import sharp from 'sharp'
 import { one } from '@wl/db'
+import { trimLogo } from '@wl/passes/logo'
+import { ART_VERSION } from '@wl/shared/strip-url'
 
 /**
  * The logo Google gets.
@@ -29,11 +31,14 @@ const FONT = 'DejaVu Sans, Helvetica, Arial, sans-serif'
  * How much of the tile the logo may occupy.
  *
  * A circle cropped from a square keeps the inscribed square, which is 1/√2 —
- * about 70.7% — of the side. Anything outside that is cut. 66% leaves a
- * little breathing room inside the circle rather than touching its edge,
- * which is the difference between "fits" and "looks placed".
+ * about 70.7% — of the side. Anything outside that is cut.
+ *
+ * 0.56 rather than something closer to that limit, because a mark that
+ * reaches the edge of a circle reads as cropped even when it is not. Every
+ * logo in a wallet app sits in a clear ring of space; without one it looks
+ * like a mistake.
  */
-const SAFE = 0.66
+const SAFE = 0.56
 
 export async function GET(
   _req: Request,
@@ -59,9 +64,12 @@ export async function GET(
   )
   if (!row) return new Response('Not found', { status: 404 })
 
-  // A stale version must not render, or the CDN keeps a logo in colours the
-  // shop has since changed.
-  if (Number(designVersion) !== row.design_version) {
+  // Two halves, as with the stamp artwork: what the OWNER last changed, and
+  // which generation of our own drawing produced it. Without the second, a
+  // fix to how we fit a logo never reaches a card that already has one.
+  const [ownerVersion, artVersion] = designVersion.split('-')
+  if (Number(ownerVersion) !== row.design_version
+      || artVersion !== String(ART_VERSION)) {
     return new Response('Stale design version', { status: 404 })
   }
 
@@ -69,11 +77,19 @@ export async function GET(
 
   let png: Buffer
   if (logo) {
+    // Trim FIRST, and this is the whole trick. Two shops uploaded the same
+    // iPrep wordmark and got wildly different results: one file carried
+    // whitespace around the mark, the other was cropped tight, so scaling
+    // each "to fit" made one small and the other pressed against the edge of
+    // the circle. Cutting the surrounding space off first means the MARK is
+    // what gets sized, not whatever border its file happened to have.
+    const trimmed = await trimLogo(logo)
+
     // White, not the brand colour: a logo is designed to sit on white, and a
     // dark mark dropped onto a dark brand background disappears inside a
     // 40-pixel circle.
     const box = Math.round(SIZE * SAFE)
-    const fitted = await sharp(logo)
+    const fitted = await sharp(trimmed)
       .resize(box, box, { fit: 'inside', withoutEnlargement: false,
                           background: { r: 255, g: 255, b: 255, alpha: 0 } })
       .toBuffer()

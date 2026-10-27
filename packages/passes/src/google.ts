@@ -1,5 +1,5 @@
 import { createSign } from 'node:crypto'
-import { stripPath } from '@wl/shared/strip-url'
+import { ART_VERSION, stripPath } from '@wl/shared/strip-url'
 import { BARCODE_CAPTION, cardState, headerValue } from '@wl/shared/card'
 import { dealQualifier } from '@wl/shared/rewards'
 
@@ -249,7 +249,8 @@ export async function upsertLoyaltyClass(args: {
     programLogo: {
       sourceUri: {
         uri: absolute(args.origin,
-          `/api/monogram/${args.program.id}/${args.program.design_version}/logo.png`),
+          `/api/monogram/${args.program.id}`
+          + `/${args.program.design_version}-${ART_VERSION}/logo.png`),
       },
       contentDescription: {
         defaultValue: { language: 'en-CA', value: `${args.shopName} logo` },

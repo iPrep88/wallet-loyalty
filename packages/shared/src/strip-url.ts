@@ -17,7 +17,7 @@
  *
  * `strip` is Apple's short pass strip; `hero` is Google's wide 3:1 banner.
  */
-export const ART_VERSION = 3
+export const ART_VERSION = 4
 
 export function stripPath(args: {
   programId: string
