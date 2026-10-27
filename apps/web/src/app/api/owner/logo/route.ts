@@ -64,7 +64,10 @@ export async function POST(req: Request) {
   // colours rather than taking over.
   if (ctx.program.colors_chosen) {
     await query(
-      `update programs set logo_url = $2, design_version = design_version + 1
+      // A crop describes a square in the OLD image's pixels. Keeping it
+      // across an upload would frame a corner of something else.
+      `update programs set logo_url = $2, logo_crop = null,
+              design_version = design_version + 1
         where id = $1`,
       [ctx.program.id, url],
     )
@@ -73,7 +76,8 @@ export async function POST(req: Request) {
 
   await query(
     `update programs
-        set logo_url = $2, bg_color = $3, fg_color = $4, label_color = $5,
+        set logo_url = $2, logo_crop = null,
+            bg_color = $3, fg_color = $4, label_color = $5,
             design_version = design_version + 1
       where id = $1`,
     [ctx.program.id, url, palette.bg, palette.fg, palette.label],

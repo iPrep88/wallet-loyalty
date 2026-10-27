@@ -10,6 +10,7 @@ import { inputClass as input } from '@/components/ui'
 import { postForm, postJson, putJson } from '@/lib/post'
 import CardPreview, { type PreviewProgram } from './CardPreview'
 import OptionCard from './OptionCard'
+import LogoCrop, { type Crop } from './LogoCrop'
 
 /**
  * Setting a shop up.
@@ -43,6 +44,7 @@ type Program = PreviewProgram & {
   stamp_icon: string
   reward_value_cents: number | null
   back_hours: string | null
+  logo_crop: Crop | null
 }
 
 type Path = null | 'own' | 'template'
@@ -69,6 +71,7 @@ export default function SetupFlow({
   const [looking, setLooking] = useState(false)
   const [lookup, setLookup] = useState<Lookup | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [cropping, setCropping] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -151,6 +154,15 @@ export default function SetupFlow({
     save({ bg_color: t.bg, fg_color: t.fg, label_color: t.label }, true)
   }
 
+  function saveCrop(crop: Crop | null) {
+    setCropping(false)
+    set('logo_crop', crop)
+    // design_version moves with it, so the card refreshes rather than keeping
+    // whatever Google already cached.
+    setProgram((p) => ({ ...p, design_version: p.design_version + 1 }))
+    save({ logo_crop: crop }, true)
+  }
+
   const joinUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/j/${store.slug}`
     : `/j/${store.slug}`
@@ -167,6 +179,14 @@ export default function SetupFlow({
 
   return (
     <main className="mx-auto min-h-dvh max-w-5xl px-5 py-6 sm:py-8">
+      {cropping && program.logo_url && (
+        <LogoCrop
+          src={program.logo_url}
+          initial={program.logo_crop}
+          onCancel={() => setCropping(false)}
+          onSave={saveCrop}
+        />
+      )}
       <div className="flex gap-1.5" aria-hidden>
         {STEPS.map((_, i) => (
           <span key={i} className={`h-1 flex-1 rounded-full ${
@@ -192,9 +212,20 @@ export default function SetupFlow({
               storeName={store.showName ? store.name : undefined}
               stamps={Math.min(3, program.stamps_required)}
             />
-            <p className="mt-3 hidden text-[12px] leading-snug text-muted lg:block">
-              This is your card. It updates as you change things.
-            </p>
+            {program.logo_url ? (
+              <p className="mt-3 text-[12px] leading-snug text-muted">
+                <button onClick={() => setCropping(true)}
+                        className="font-semibold text-link hover:underline">
+                  Adjust your logo
+                </button>{' '}
+                — Google shows it as a circle.{' '}
+                {program.logo_crop ? 'You have chosen what goes in it.' : null}
+              </p>
+            ) : (
+              <p className="mt-3 hidden text-[12px] leading-snug text-muted lg:block">
+                This is your card. It updates as you change things.
+              </p>
+            )}
           </div>
         ) : <div className="hidden lg:block" />}
 

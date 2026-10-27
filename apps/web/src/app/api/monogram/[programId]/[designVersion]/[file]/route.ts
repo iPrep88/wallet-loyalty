@@ -61,9 +61,11 @@ export async function GET(
     bg_color: string
     fg_color: string
     logo_url: string | null
+    logo_crop: { x: number; y: number; size: number } | null
     design_version: number
   }>(
-    `select c.name, p.bg_color, p.fg_color, p.logo_url, p.design_version
+    `select c.name, p.bg_color, p.fg_color, p.logo_url, p.logo_crop,
+            p.design_version
        from programs p
        join companies c on c.id = p.company_id
       where p.id = $1`,
@@ -83,7 +85,21 @@ export async function GET(
   const logo = await loadLogo(row.logo_url)
 
   let png: Buffer
-  if (logo) {
+  if (logo && row.logo_crop) {
+    // The owner framed this themselves. Their square becomes the whole tile,
+    // corners and all — the circle they were shown while choosing is the same
+    // circle Google draws, so what they saw is what ships. No trimming and no
+    // diagonal rule: both would second-guess a decision already made.
+    png = await sharp(logo)
+      .extract({
+        left: row.logo_crop.x, top: row.logo_crop.y,
+        width: row.logo_crop.size, height: row.logo_crop.size,
+      })
+      .resize(SIZE, SIZE, { fit: 'fill' })
+      .flatten({ background: { r: 255, g: 255, b: 255 } })
+      .png({ compressionLevel: 9 })
+      .toBuffer()
+  } else if (logo) {
     // Trim FIRST, and this is the whole trick. Two shops uploaded the same
     // iPrep wordmark and got wildly different results: one file carried
     // whitespace around the mark, the other was cropped tight, so scaling

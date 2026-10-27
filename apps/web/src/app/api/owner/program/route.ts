@@ -22,6 +22,8 @@ interface Patch {
   longitude?: number | null
 
   card_style?: string
+  /** A square in the logo's own pixels, or null to go back to automatic. */
+  logo_crop?: { x: number; y: number; size: number } | null
   stamp_icon?: string
   bg_color?: string
   fg_color?: string
@@ -53,6 +55,24 @@ export async function PUT(req: Request) {
       return err('bad_request', 'Unknown card style.')
     }
     patch.card_style = input.card_style
+  }
+  if (input.logo_crop !== undefined) {
+    const c = input.logo_crop
+    if (c === null) {
+      patch.logo_crop = null
+    } else if (
+      typeof c?.x !== 'number' || typeof c?.y !== 'number' || typeof c?.size !== 'number'
+      || !Number.isFinite(c.x) || !Number.isFinite(c.y) || !Number.isFinite(c.size)
+      || c.size <= 0 || c.x < 0 || c.y < 0
+    ) {
+      return err('bad_request', 'That crop does not look right.')
+    } else {
+      // Rounded here rather than trusted from the browser: these become
+      // sharp's extract() arguments, and a fractional pixel throws.
+      patch.logo_crop = {
+        x: Math.round(c.x), y: Math.round(c.y), size: Math.round(c.size),
+      }
+    }
   }
   if (input.stamp_icon !== undefined) {
     if (!STAMP_ICONS.includes(input.stamp_icon as never)) {

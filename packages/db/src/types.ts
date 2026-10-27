@@ -61,6 +61,9 @@ export interface Program {
   cooldown_seconds: number
   card_style: CardStyle
   logo_url: string | null
+  /** Null = fit the whole logo. Otherwise a square, in the source's own
+   *  pixels, that the owner chose for Google's circle. */
+  logo_crop: { x: number; y: number; size: number } | null
   icon_url: string | null
   photo_url: string | null
   stamp_icon: string

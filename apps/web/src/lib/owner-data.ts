@@ -39,7 +39,7 @@ export async function ownerContext(): Promise<OwnerContext | null> {
 const VISUAL_FIELDS = [
   'stamps_required', 'reward_in_grid', 'reward_text', 'card_style', 'stamp_icon',
   'stamp_icon_url',
-  'logo_url', 'photo_url', 'bg_color', 'fg_color', 'label_color',
+  'logo_url', 'logo_crop', 'photo_url', 'bg_color', 'fg_color', 'label_color',
 ] as const
 
 export function changesTheCard(

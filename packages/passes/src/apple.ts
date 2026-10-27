@@ -16,6 +16,14 @@
  *   3. The Apple WWDR intermediate certificate.
  *   4. A domain with HTTPS — Apple will not talk to the web service without it.
  *
+ * One thing to get right when it is built: Apple draws logo.png in a
+ * RECTANGLE at the top of the pass, so a shop's wordmark shows there in full
+ * and should be used AS UPLOADED — program.logo_url, not the circle tile at
+ * /api/monogram. That tile exists because Google crops to a circle, and
+ * logo_crop is the owner's answer to that circle. Neither applies here, and
+ * using them would shrink a perfectly good wordmark into the middle of a
+ * rectangle for no reason.
+ *
  * And a standing reminder: the Pass Type ID certificate EXPIRES EVERY YEAR.
  * When it lapses you cannot sign new passes and every existing card stops
  * updating, silently. Put a calendar reminder at 11 months.
