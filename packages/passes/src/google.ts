@@ -241,14 +241,15 @@ export async function upsertLoyaltyClass(args: {
     // requires at least one class in this state.
     reviewStatus: 'UNDER_REVIEW',
     hexBackgroundColor: args.program.bg_color,
-    // Google requires a logo on every class — a card cannot exist without
-    // one — and a shop that picked a ready-made card was never asked for a
-    // logo. Rather than refuse to make their card, fall back to a monogram
-    // in their own colours.
+    // ALWAYS the prepared tile, never the raw upload. Google draws this
+    // inside a circle, which keeps only the inscribed square — so a logo sent
+    // as-is loses its corners, and a wide wordmark comes out tiny and
+    // clipped. That route fits it to the part that survives, and draws a
+    // monogram for a shop that never uploaded anything.
     programLogo: {
       sourceUri: {
-        uri: absolute(args.origin, args.program.logo_url
-          ?? `/api/monogram/${args.program.id}/${args.program.design_version}/logo.png`),
+        uri: absolute(args.origin,
+          `/api/monogram/${args.program.id}/${args.program.design_version}/logo.png`),
       },
       contentDescription: {
         defaultValue: { language: 'en-CA', value: `${args.shopName} logo` },

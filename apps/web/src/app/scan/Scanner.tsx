@@ -60,7 +60,11 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
     let cancelled = false
     void (async () => {
       try {
-        const res = await fetch('/api/staff/pin')
+        // Hard deadline. On a phone with one bar this request can hang for
+        // thirty seconds, and the app sits on "one moment" looking broken —
+        // which is exactly what it did on the counter phone. Better to show
+        // the PIN screen quickly and be wrong than to show nothing.
+        const res = await fetch('/api/staff/pin', { signal: AbortSignal.timeout(2500) })
         const data = await res.json() as {
           ok: boolean; staff?: { name: string }; store?: string
         }
@@ -70,7 +74,7 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
           setView({ kind: 'camera' })
           return
         }
-      } catch { /* offline, or no session: fall through to the PIN screen */ }
+      } catch { /* offline, slow, or no session: fall through to the PIN screen */ }
       if (!cancelled) setView({ kind: 'pin' })
     })()
     return () => { cancelled = true }
@@ -346,7 +350,8 @@ async function makeDetector(): Promise<Detector | null> {
 /** Reads a QR from the camera, on any phone a shop actually owns. */
 function CameraReader({ onToken }: { onToken: (token: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const [state, setState] = useState<'idle' | 'running' | 'unsupported' | 'denied'>('idle')
+  const [state, setState] =
+    useState<'idle' | 'warming' | 'running' | 'unsupported' | 'denied'>('idle')
 
   useEffect(() => {
     let stream: MediaStream | undefined
@@ -354,9 +359,11 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
     let stopped = false
 
     ;(async () => {
-      const detector = await makeDetector()
-      if (stopped) return
-      if (!detector) { setState('unsupported'); return }
+      // The decoder is a megabyte of WebAssembly on iOS, and waiting for it
+      // before even asking for the camera meant the first scan silently did
+      // nothing while it downloaded — "it works the second time". Start the
+      // camera immediately and let the decoder arrive alongside it.
+      const detectorPromise = makeDetector()
 
       try {
         stream = await navigator.mediaDevices.getUserMedia({
@@ -367,6 +374,11 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
         if (!video) return
         video.srcObject = stream
         await video.play()
+        setState('warming')
+
+        const detector = await detectorPromise
+        if (stopped) return
+        if (!detector) { setState('unsupported'); return }
         setState('running')
 
         // Decoding a full 1080p frame in WebAssembly on a three-year-old phone
@@ -420,8 +432,10 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-black">
       <video ref={videoRef} playsInline muted className="aspect-[3/4] w-full object-cover" />
-      {state === 'idle' && (
-        <p className="py-3 text-center text-[12.5px] text-white/70">Starting the camera…</p>
+      {state !== 'running' && (
+        <p className="py-3 text-center text-[12.5px] text-white/70">
+          {state === 'warming' ? 'Nearly ready…' : 'Starting the camera…'}
+        </p>
       )}
     </div>
   )

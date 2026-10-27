@@ -47,22 +47,29 @@ export async function POST(req: Request) {
 
 async function run(job: Job): Promise<'done' | 'skipped'> {
   switch (job.kind) {
+    // A stamp enqueues exactly one job and it has to reach EVERY wallet the
+    // customer might be carrying. This used to fall straight through to the
+    // Apple branch, skip because Apple was not configured, and never tell
+    // Google anything — so a stamp landed in the database and the card in the
+    // customer's pocket sat there unchanged. The card is the product; a stamp
+    // that does not reach it did not happen.
     case 'push_member':
     case 'push_program':
-      if (!isAppleConfigured()) {
-        await skip(job.id, 'Apple Wallet not configured')
+    case 'google_patch': {
+      const google = isGoogleConfigured()
+      const apple = isAppleConfigured()
+      if (!google && !apple) {
+        await skip(job.id, 'No wallet is configured')
         return 'skipped'
       }
-      // TODO(apple): regenerate the pass and send an empty APNs push to every
-      // device registered for this member.
-      throw new Error('Apple push not implemented')
-
-    case 'google_patch':
-      if (!isGoogleConfigured()) {
-        await skip(job.id, 'Google Wallet not configured')
-        return 'skipped'
+      if (google) await googlePatch(job)
+      if (apple) {
+        // TODO(apple): regenerate the pass and send an empty APNs push to
+        // every device registered for this member.
+        throw new Error('Apple push not implemented')
       }
-      return googlePatch(job)
+      return 'done'
+    }
 
     case 'strip_warm':
       // Nothing to do: the artwork endpoint renders on demand and is immutable.
@@ -90,9 +97,9 @@ async function run(job: Job): Promise<'done' | 'skipped'> {
  * the queue behind others, and by the time this runs the count in the job may
  * be two stamps out of date. The card should show what is true now.
  */
-async function googlePatch(job: Job): Promise<'done' | 'skipped'> {
+async function googlePatch(job: Job): Promise<void> {
   const memberId = (job.payload as { memberId?: string }).memberId
-  if (!memberId) throw new Error('google_patch job has no memberId')
+  if (!memberId) throw new Error('push job has no memberId')
 
   const row = await one<Member & { program: Program }>(
     `select m.*, to_jsonb(p.*) as program
@@ -103,7 +110,7 @@ async function googlePatch(job: Job): Promise<'done' | 'skipped'> {
     [memberId],
   )
   // The member was deleted between the stamp and the drain. Nothing to push.
-  if (!row) return 'skipped'
+  if (!row) return
 
   await patchLoyaltyObject({
     program: row.program,
@@ -112,7 +119,6 @@ async function googlePatch(job: Job): Promise<'done' | 'skipped'> {
     // is the one place the app's public address MUST be configured.
     origin: requireAppUrl(),
   })
-  return 'done'
 }
 
 function requireAppUrl(): string {

@@ -74,6 +74,38 @@ export default async function Dashboard(
           </div>
         )}
 
+        {/* The two things an owner actually comes back here to DO, above the
+            numbers they come here to look at. Staff codes were at the bottom
+            of a long page, which is the same as not existing. */}
+        <section className="mt-7 grid gap-3 sm:grid-cols-2">
+          <Card flush>
+            <div className="border-b border-line px-5 py-3">
+              <SectionTitle>Staff &amp; their codes</SectionTitle>
+            </div>
+            <StaffCodes />
+          </Card>
+          <Card>
+            <SectionTitle>Your codes to print and scan</SectionTitle>
+            <div className="mt-3 flex flex-col gap-2">
+              <a href={`/api/print/qr/${store.slug}.png`}
+                 download={`${store.slug}-counter-code.png`}
+                 className="rounded-xl bg-accent px-4 py-3 text-center text-[14.5px]
+                            font-semibold text-accent-ink">
+                Download the counter code
+              </a>
+              <a href={`/scan?store=${store.slug}`} target="_blank" rel="noopener"
+                 className="rounded-xl border border-line px-4 py-3 text-center
+                            text-[14.5px] font-medium">
+                Open the scanner
+              </a>
+            </div>
+            <p className="mt-3 text-[12.5px] leading-snug text-muted">
+              The counter code goes on the till for customers. The scanner is what
+              your staff use to add a stamp.
+            </p>
+          </Card>
+        </section>
+
         <section className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Tile label="Members" value={head.members.toLocaleString('en-CA')}
                 foot={`${head.newThisWeek} new this week`} />
@@ -118,11 +150,6 @@ export default async function Dashboard(
             </Card>
           </section>
         )}
-
-        <section className="mt-9">
-          <SectionTitle>Who can use the scanner</SectionTitle>
-          <Card className="mt-3" flush><StaffCodes /></Card>
-        </section>
 
         <section className="mt-9">
           <SectionTitle>By staff member, this month</SectionTitle>

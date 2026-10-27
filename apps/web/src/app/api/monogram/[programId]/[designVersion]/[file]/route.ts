@@ -2,23 +2,38 @@ import sharp from 'sharp'
 import { one } from '@wl/db'
 
 /**
- * A stand-in logo, for a shop that has not uploaded one.
+ * The logo Google gets.
  *
- * Google requires a programLogo on every loyalty class — a card cannot exist
- * without one — and the "ready-made card" path deliberately lets an owner
- * skip the upload. So rather than refuse to make their card, we draw them a
- * monogram in their own colours. It is their initials on their card, not a
- * blank square and not our logo on their shop.
+ * Google draws a loyalty class's programLogo inside a CIRCLE, and hands it a
+ * square. A square cropped to a circle keeps only its inscribed square —
+ * about 70% of the width — so a logo sent as-is has its corners cut off and a
+ * wide wordmark ends up tiny and clipped. That is what happened to iPrep's.
+ *
+ * So the shop's logo is never passed straight through. It is fitted inside
+ * the part of the tile that survives the crop, centred, on a clean ground.
+ * A shop with no logo at all gets a monogram instead — Google marks
+ * programLogo as required, and the "ready-made card" path deliberately never
+ * asks for an upload, so refusing to make their card was not an option.
  *
  * Immutable for the same reason the stamp artwork is: every input that
- * changes a pixel is in the path, and design_version moves when the colours
- * or the name do.
+ * changes a pixel is in the path, and design_version moves when the colours,
+ * the name or the logo do.
  */
 export const dynamic = 'force-static'
 export const revalidate = false
 
 const SIZE = 660
 const FONT = 'DejaVu Sans, Helvetica, Arial, sans-serif'
+
+/**
+ * How much of the tile the logo may occupy.
+ *
+ * A circle cropped from a square keeps the inscribed square, which is 1/√2 —
+ * about 70.7% — of the side. Anything outside that is cut. 66% leaves a
+ * little breathing room inside the circle rather than touching its edge,
+ * which is the difference between "fits" and "looks placed".
+ */
+const SAFE = 0.66
 
 export async function GET(
   _req: Request,
@@ -33,9 +48,10 @@ export async function GET(
     name: string
     bg_color: string
     fg_color: string
+    logo_url: string | null
     design_version: number
   }>(
-    `select c.name, p.bg_color, p.fg_color, p.design_version
+    `select c.name, p.bg_color, p.fg_color, p.logo_url, p.design_version
        from programs p
        join companies c on c.id = p.company_id
       where p.id = $1`,
@@ -49,15 +65,35 @@ export async function GET(
     return new Response('Stale design version', { status: 404 })
   }
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}">`
-    + `<rect width="${SIZE}" height="${SIZE}" rx="${SIZE * 0.22}" fill="${row.bg_color}"/>`
-    + `<text x="${SIZE / 2}" y="${SIZE / 2}" text-anchor="middle"`
-    + ` dominant-baseline="central" fill="${row.fg_color}"`
-    + ` font-family="${FONT}" font-size="${SIZE * 0.42}" font-weight="bold"`
-    + ` letter-spacing="${SIZE * 0.01}">${initials(row.name)}</text>`
-    + `</svg>`
+  const logo = await loadLogo(row.logo_url)
 
-  const png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer()
+  let png: Buffer
+  if (logo) {
+    // White, not the brand colour: a logo is designed to sit on white, and a
+    // dark mark dropped onto a dark brand background disappears inside a
+    // 40-pixel circle.
+    const box = Math.round(SIZE * SAFE)
+    const fitted = await sharp(logo)
+      .resize(box, box, { fit: 'inside', withoutEnlargement: false,
+                          background: { r: 255, g: 255, b: 255, alpha: 0 } })
+      .toBuffer()
+    png = await sharp({
+      create: { width: SIZE, height: SIZE, channels: 4,
+                background: { r: 255, g: 255, b: 255, alpha: 1 } },
+    })
+      .composite([{ input: fitted, gravity: 'centre' }])
+      .png({ compressionLevel: 9 })
+      .toBuffer()
+  } else {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}">`
+      + `<rect width="${SIZE}" height="${SIZE}" fill="${row.bg_color}"/>`
+      + `<text x="${SIZE / 2}" y="${SIZE / 2}" text-anchor="middle"`
+      + ` dominant-baseline="central" fill="${row.fg_color}"`
+      + ` font-family="${FONT}" font-size="${SIZE * 0.34}" font-weight="bold"`
+      + ` letter-spacing="${SIZE * 0.01}">${initials(row.name)}</text>`
+      + `</svg>`
+    png = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer()
+  }
 
   return new Response(new Uint8Array(png), {
     headers: {
@@ -79,4 +115,16 @@ function initials(name: string): string {
   return letters.join('').toUpperCase()
     .replace(/[<>&"']/g, '')   // it lands inside an SVG document
     || '?'
+}
+
+/** The uploaded logo's bytes, straight from the asset table — no HTTP round
+ *  trip back into our own server to fetch something we already hold. */
+async function loadLogo(logoUrl: string | null): Promise<Buffer | null> {
+  if (!logoUrl) return null
+  const id = logoUrl.split('/').pop()
+  if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return null
+  const asset = await one<{ bytes: Buffer }>(
+    `select bytes from assets where id = $1`, [id],
+  )
+  return asset?.bytes ?? null
 }
