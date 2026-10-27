@@ -69,18 +69,44 @@ export default function JoinForm(
           {result.existing ? 'Welcome back — that is your card.' : 'You are in.'}
         </p>
 
-        {result.wallet && result.wallet.pending.length > 0 && (
+        {result.wallet?.google_save_url && (
+          <a
+            href={result.wallet.google_save_url}
+            className="mt-5 flex h-[52px] w-full items-center justify-center gap-2.5
+                       rounded-[26px] bg-black px-5 text-[15px] font-medium text-white
+                       transition active:opacity-85"
+          >
+            <WalletGlyph />
+            Add to Google Wallet
+          </a>
+        )}
+
+        {result.wallet?.apple_pkpass_url && (
+          <a
+            href={result.wallet.apple_pkpass_url}
+            className="mt-3 flex h-[52px] w-full items-center justify-center rounded-[26px]
+                       bg-black px-5 text-[15px] font-medium text-white transition
+                       active:opacity-85"
+          >
+            Add to Apple Wallet
+          </a>
+        )}
+
+        {/* Only mention a wallet that is actually missing. Once one of them
+            works, telling someone the OTHER one does not is noise they cannot
+            act on — they have the card they came for. */}
+        {result.wallet
+          && result.wallet.pending.includes(platform === 'apple' ? 'apple' : 'google')
+          && (
           <div className="mt-5 rounded-xl border border-current/20 p-4 text-[13px] leading-relaxed"
                style={{ color: labelColor }}>
             <p className="font-medium" style={{ color: fgColor }}>
               Wallet delivery is not switched on yet
             </p>
             <p className="mt-1">
-              Your stamps are saved. Adding the card to{' '}
-              {result.wallet.pending.includes('apple') ? 'Apple Wallet' : ''}
-              {result.wallet.pending.length === 2 ? ' and ' : ''}
-              {result.wallet.pending.includes('google') ? 'Google Wallet' : ''}{' '}
-              needs the developer accounts set up first.
+              Your stamps are saved and your card works — adding it to{' '}
+              {platform === 'apple' ? 'Apple Wallet' : 'Google Wallet'} needs the
+              developer account set up first.
             </p>
           </div>
         )}
@@ -161,5 +187,24 @@ export default function JoinForm(
         </p>
       )}
     </div>
+  )
+}
+
+/**
+ * A wallet glyph for the save button.
+ *
+ * Google's brand guidelines require their own "Add to Google Wallet" asset in
+ * production, with its wordmark and exact proportions. This stands in until
+ * the issuer account leaves demo mode, which is the same moment the button
+ * starts being seen by anyone outside the allowlist.
+ */
+function WalletGlyph() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="2.5" y="5.5" width="19" height="13" rx="3"
+            stroke="currentColor" strokeWidth="1.8" />
+      <path d="M2.5 10h19" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="17" cy="14.5" r="1.4" fill="currentColor" />
+    </svg>
   )
 }

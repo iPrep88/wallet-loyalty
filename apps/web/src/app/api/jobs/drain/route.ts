@@ -1,14 +1,15 @@
 import { claim, fail, skip, succeed, type Job } from '@/lib/jobs'
 import { isAppleConfigured } from '@wl/passes/apple'
-import { isGoogleConfigured } from '@wl/passes/google'
+import { isGoogleConfigured, patchLoyaltyObject } from '@wl/passes/google'
+import { one, type Member, type Program } from '@wl/db'
 import { err, ok } from '@/lib/http'
 
 /**
  * The queue worker. Called by cron, not by a user.
  *
- * Right now every job is skipped, because neither wallet is configured — but
- * the plumbing either side of that is real, so wiring Apple up later means
- * filling in one branch rather than reworking how stamps notify cards.
+ * Google is wired up; Apple is still a stub. The plumbing either side of
+ * both is real, so finishing Apple means filling in one branch rather than
+ * reworking how stamps notify cards.
  */
 export const dynamic = 'force-dynamic'
 
@@ -61,8 +62,7 @@ async function run(job: Job): Promise<'done' | 'skipped'> {
         await skip(job.id, 'Google Wallet not configured')
         return 'skipped'
       }
-      // TODO(google): PATCH loyaltyPoints and heroImage on the object.
-      throw new Error('Google patch not implemented')
+      return googlePatch(job)
 
     case 'strip_warm':
       // Nothing to do: the artwork endpoint renders on demand and is immutable.
@@ -81,4 +81,47 @@ async function run(job: Job): Promise<'done' | 'skipped'> {
       await skip(job.id, 'quiet-store check not implemented yet')
       return 'skipped'
   }
+}
+
+/**
+ * Push a member's new count to their Google card.
+ *
+ * Reads the member fresh rather than trusting the payload: jobs can sit in
+ * the queue behind others, and by the time this runs the count in the job may
+ * be two stamps out of date. The card should show what is true now.
+ */
+async function googlePatch(job: Job): Promise<'done' | 'skipped'> {
+  const memberId = (job.payload as { memberId?: string }).memberId
+  if (!memberId) throw new Error('google_patch job has no memberId')
+
+  const row = await one<Member & { program: Program }>(
+    `select m.*, to_jsonb(p.*) as program
+       from members m
+       join stores s   on s.id = m.store_id
+       join programs p on p.company_id = s.company_id
+      where m.id = $1`,
+    [memberId],
+  )
+  // The member was deleted between the stamp and the drain. Nothing to push.
+  if (!row) return 'skipped'
+
+  await patchLoyaltyObject({
+    program: row.program,
+    member: { serial: row.serial, stamps: row.stamps },
+    // The queue runs with no incoming request to take an origin from, so this
+    // is the one place the app's public address MUST be configured.
+    origin: requireAppUrl(),
+  })
+  return 'done'
+}
+
+function requireAppUrl(): string {
+  const url = process.env.NEXT_PUBLIC_APP_URL
+  if (!url) {
+    throw new Error(
+      'NEXT_PUBLIC_APP_URL is not set. Google fetches card artwork from the '
+      + 'public internet, so the queue cannot build image URLs without it.',
+    )
+  }
+  return url
 }

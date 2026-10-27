@@ -1,6 +1,6 @@
 import { joinStore } from '@/lib/join'
 import { isAppleConfigured } from '@wl/passes/apple'
-import { isGoogleConfigured } from '@wl/passes/google'
+import { createSaveLink, isGoogleConfigured } from '@wl/passes/google'
 import { cardState, headerValue } from '@wl/shared'
 import { body, err, ok } from '@/lib/http'
 
@@ -14,9 +14,9 @@ interface Req {
 
 /**
  * Creates (or recovers) a member and hands back whatever the platform can
- * actually deliver today. Neither wallet is configured yet, so this returns
- * the card token instead of a pass — enough for the join page to show a real
- * preview and for the scanner loop to be exercised end to end.
+ * actually deliver today. The card token always comes back, so the join page
+ * works even with no wallet configured at all; a save link is added for each
+ * wallet that IS configured.
  */
 export async function POST(req: Request) {
   const input = await body<Req>(req)
@@ -36,6 +36,27 @@ export async function POST(req: Request) {
   if (!isAppleConfigured()) pending.push('apple')
   if (!isGoogleConfigured()) pending.push('google')
 
+  // Google is asked for a save link inline because the customer is standing
+  // at a counter waiting for it. If Google is slow or unhappy, they still get
+  // their card page and their QR — losing the wallet button is a worse day,
+  // not a broken one, and the queue has no way to hand a link back to a
+  // request that already finished.
+  let googleSaveUrl: string | null = null
+  if (isGoogleConfigured()) {
+    try {
+      googleSaveUrl = await createSaveLink({
+        program,
+        member: { serial: member.serial, stamps: member.stamps },
+        shopName: store.name,
+        storeName: store.name,
+        cardToken: token,
+        origin: process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin,
+      })
+    } catch (e) {
+      console.error('[join] Google save link failed:', e)
+    }
+  }
+
   return ok({
     existing,
     member: {
@@ -50,7 +71,7 @@ export async function POST(req: Request) {
     card_token: token,
     wallet: {
       apple_pkpass_url: isAppleConfigured() ? `/api/pass/apple/${member.serial}` : null,
-      google_save_url: null,
+      google_save_url: googleSaveUrl,
       pending,
     },
   })
