@@ -271,28 +271,57 @@ export default function Scanner({ defaultSlug }: { defaultSlug: string }) {
   )
 }
 
+interface Detector { detect(source: CanvasImageSource): Promise<{ rawValue: string }[]> }
+
 /**
- * Reads a QR with the browser's own BarcodeDetector where it exists (Android
- * Chrome, recent desktop Chrome). Safari does not implement it, so the manual
- * token field below is the fallback — and the real scanner is the Expo app.
+ * Finds something that can read a QR code.
+ *
+ * Chrome has BarcodeDetector built in and it is the fastest path, so it wins
+ * when it is there. Safari does not implement it — and EVERY browser on iOS
+ * is Safari underneath — so on the iPhone or iPad sitting on a shop counter
+ * the camera used to fall straight through to "paste a card token", which no
+ * staff member will ever do. That was not a platform limitation; it was a
+ * missing decoder.
+ *
+ * The fallback is the same API backed by ZXing compiled to WebAssembly, which
+ * is why none of the code below has to know which one it got. It is imported
+ * only when needed, so Chrome never downloads a megabyte it has no use for,
+ * and the .wasm is served from our own origin rather than a public CDN — a
+ * shop's till should not depend on jsdelivr being up.
  */
+async function makeDetector(): Promise<Detector | null> {
+  const Native = (globalThis as {
+    BarcodeDetector?: new (o: { formats: string[] }) => Detector
+  }).BarcodeDetector
+  if (Native) return new Native({ formats: ['qr_code'] })
+
+  try {
+    const mod = await import('barcode-detector/ponyfill')
+    mod.setZXingModuleOverrides({
+      locateFile: (path: string, prefix: string) =>
+        path.endsWith('.wasm') ? '/zxing_reader.wasm' : prefix + path,
+    })
+    return new mod.BarcodeDetector({ formats: ['qr_code'] })
+  } catch {
+    return null
+  }
+}
+
+/** Reads a QR from the camera, on any phone a shop actually owns. */
 function CameraReader({ onToken }: { onToken: (token: string) => void }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [state, setState] = useState<'idle' | 'running' | 'unsupported' | 'denied'>('idle')
 
   useEffect(() => {
-    const Detector = (globalThis as { BarcodeDetector?: new (o: { formats: string[] }) => {
-      detect: (s: CanvasImageSource) => Promise<{ rawValue: string }[]>
-    } }).BarcodeDetector
-
-    if (!Detector) { setState('unsupported'); return }
-
     let stream: MediaStream | undefined
-    let raf = 0
+    let timer: ReturnType<typeof setTimeout> | undefined
     let stopped = false
-    const detector = new Detector({ formats: ['qr_code'] })
 
     ;(async () => {
+      const detector = await makeDetector()
+      if (stopped) return
+      if (!detector) { setState('unsupported'); return }
+
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment' },
@@ -304,14 +333,30 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
         await video.play()
         setState('running')
 
+        // Decoding a full 1080p frame in WebAssembly on a three-year-old phone
+        // is slow enough to feel broken. A QR only needs a few hundred pixels
+        // across, so every frame is drawn down to this width first.
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        const WIDTH = 540
+
         const tick = async () => {
-          if (stopped || !videoRef.current) return
+          if (stopped || !videoRef.current || !ctx) return
+          const v = videoRef.current
           try {
-            const found = await detector.detect(videoRef.current)
-            const value = found[0]?.rawValue
-            if (value) { onToken(value); return }
+            if (v.videoWidth > 0) {
+              canvas.width = WIDTH
+              canvas.height = Math.round((v.videoHeight / v.videoWidth) * WIDTH)
+              ctx.drawImage(v, 0, 0, canvas.width, canvas.height)
+              const found = await detector.detect(canvas)
+              const value = found[0]?.rawValue
+              if (value) { onToken(value); return }
+            }
           } catch { /* a frame that cannot be decoded is normal */ }
-          raf = requestAnimationFrame(() => void tick())
+          // A short gap rather than every animation frame: scanning flat out
+          // pins a phone's CPU and empties the battery of a device that has to
+          // last a shift.
+          timer = setTimeout(() => void tick(), 120)
         }
         void tick()
       } catch {
@@ -321,7 +366,7 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
 
     return () => {
       stopped = true
-      cancelAnimationFrame(raf)
+      if (timer) clearTimeout(timer)
       stream?.getTracks().forEach((t) => t.stop())
     }
   }, [onToken])
@@ -330,8 +375,8 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
     return (
       <p className="rounded-xl bg-surface-2 px-4 py-3 text-sm text-muted">
         {state === 'denied'
-          ? 'Camera access was declined — use the token field below.'
-          : 'This browser cannot scan QR codes. Use the token field below, or the scanner app.'}
+          ? 'Camera access was declined — allow it in your browser settings, or use the token field below.'
+          : 'This browser cannot reach a camera. Use the token field below.'}
       </p>
     )
   }
@@ -339,6 +384,9 @@ function CameraReader({ onToken }: { onToken: (token: string) => void }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-black">
       <video ref={videoRef} playsInline muted className="aspect-[3/4] w-full object-cover" />
+      {state === 'idle' && (
+        <p className="py-3 text-center text-[12.5px] text-white/70">Starting the camera…</p>
+      )}
     </div>
   )
 }
