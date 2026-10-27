@@ -5,6 +5,7 @@ import { ownerContext } from '@/lib/owner-data'
 import { byStaff, byStore, customers, daysSinceLastScan, distribution, headline } from '@/lib/stats'
 import { Card, Eyebrow, Logo, Notice, SectionTitle } from '@/components/ui'
 import StampDistribution from './StampDistribution'
+import StaffCodes from './StaffCodes'
 
 export const dynamic = 'force-dynamic'
 
@@ -117,6 +118,11 @@ export default async function Dashboard(
             </Card>
           </section>
         )}
+
+        <section className="mt-9">
+          <SectionTitle>Who can use the scanner</SectionTitle>
+          <Card className="mt-3" flush><StaffCodes /></Card>
+        </section>
 
         <section className="mt-9">
           <SectionTitle>By staff member, this month</SectionTitle>

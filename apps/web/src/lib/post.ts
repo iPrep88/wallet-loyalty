@@ -14,7 +14,7 @@ export type PostResult<T> =
 export async function postJson<T>(
   url: string,
   body: unknown,
-  method: 'POST' | 'PUT' = 'POST',
+  method: 'POST' | 'PUT' | 'PATCH' = 'POST',
 ): Promise<PostResult<T>> {
   let res: Response
   try {
@@ -61,6 +61,11 @@ export async function postJson<T>(
  */
 export function putJson<T>(url: string, body: unknown): Promise<PostResult<T>> {
   return postJson<T>(url, body, 'PUT')
+}
+
+/** For a change to part of something, where PUT would mean "replace it all". */
+export function patchJson<T>(url: string, body: unknown): Promise<PostResult<T>> {
+  return postJson<T>(url, body, 'PATCH')
 }
 
 /** The same, for multipart uploads. */

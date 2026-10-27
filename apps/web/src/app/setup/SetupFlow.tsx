@@ -724,6 +724,16 @@ function TheDeal(
 
 /* ----------------------------------------------------------- step three */
 
+interface StaffRow { id: string; name: string }
+
+/**
+ * The last screen, and the one that decides whether a shop ever uses this.
+ *
+ * An owner leaves here with three things or they leave with nothing: the code
+ * for the counter, the code their staff type into the scanner, and a plain
+ * account of what happens when a customer walks up. Everything before this
+ * screen is decoration if nobody at the till knows what to do.
+ */
 function YourCode(
   { storeSlug, shopName, joinUrl }:
   { storeSlug: string; shopName: string; joinUrl: string },
@@ -734,9 +744,34 @@ function YourCode(
     shopName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'shop'
   }-stamp-card-code.png`
 
+  const [pin, setPin] = useState<string | null>(null)
+  const [existing, setExisting] = useState<StaffRow[] | null>(null)
+  const asked = useRef(false)
+
+  // A shop that signs up has no staff and therefore no way to scan anything.
+  // Make the owner one the moment they land here, so they never meet a
+  // scanner that will not let them in.
+  useEffect(() => {
+    if (asked.current) return
+    asked.current = true
+    void (async () => {
+      const list = await fetch('/api/owner/staff')
+        .then((r) => r.json() as Promise<{ staff?: StaffRow[] }>)
+        .catch(() => null)
+      // Must not be a silent [] on failure: that would mint a second owner
+      // code every time this screen was revisited.
+      if (!list || !Array.isArray(list.staff)) { setExisting([]); return }
+      const staff = list.staff
+      if (staff.length > 0) { setExisting(staff); return }
+      const made = await postJson<{ pin?: string }>('/api/owner/staff', { name: 'Owner' })
+      if (made.ok && made.data.pin) setPin(made.data.pin)
+      else setExisting([])
+    })()
+  }, [])
+
   return (
     <Section title="You are live"
-             subtitle="Print this and put it where customers can see it. They scan, the card lands in their phone — no app, no account.">
+             subtitle="Print the code, put it where customers can see it, and you are open. They scan, the card lands in their phone — no app, no account.">
       <div className="overflow-hidden rounded-2xl border border-line">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt="Your counter code" width={900} height={1200} className="w-full" />
@@ -766,7 +801,11 @@ function YourCode(
         900 × 1200 — sharp printed at postcard size.
       </p>
 
-      <p className="mt-6 text-[13px] text-muted">Your join page</p>
+      <StaffCode pin={pin} existing={existing} />
+
+      <AtTheCounter storeSlug={storeSlug} />
+
+      <p className="mt-7 text-[13px] text-muted">Your join page</p>
       <code className="mt-1 block break-all rounded-lg bg-surface-2 px-3 py-2
                        font-mono text-[12px]">{joinUrl}</code>
 
@@ -783,6 +822,74 @@ function YourCode(
         </a>
       </div>
     </Section>
+  )
+}
+
+/**
+ * The counter code.
+ *
+ * Shown once and never again, because only its hash is kept. Saying so
+ * plainly beats letting an owner discover it when they come back looking.
+ */
+function StaffCode({ pin, existing }: { pin: string | null; existing: StaffRow[] | null }) {
+  if (pin) {
+    return (
+      <div className="mt-7 rounded-xl border border-accent bg-accent-soft p-4">
+        <p className="text-sm font-semibold">Your staff code</p>
+        <p className="mt-2 text-center font-mono text-[40px] font-bold leading-none
+                      tracking-[0.2em]">{pin}</p>
+        <p className="mt-3 text-[12.5px] leading-snug text-muted">
+          Write this down now — we store it scrambled and cannot show it to you
+          again. If you lose it, make a new one from your dashboard in a second.
+        </p>
+      </div>
+    )
+  }
+  if (existing && existing.length > 0) {
+    return (
+      <div className="mt-7 rounded-xl border border-line bg-surface-2 p-4">
+        <p className="text-sm font-semibold">Your staff codes</p>
+        <p className="mt-1.5 text-[12.5px] leading-snug text-muted">
+          {existing.length === 1 ? 'One person' : `${existing.length} people`} can
+          already sign into the scanner: {existing.map((s) => s.name).join(', ')}.
+          Add or reset codes from your dashboard.
+        </p>
+      </div>
+    )
+  }
+  return null
+}
+
+/** What happens when somebody walks up to the till. */
+function AtTheCounter({ storeSlug }: { storeSlug: string }) {
+  const steps = [
+    <>Open the scanner on the shop&rsquo;s phone or tablet and type your staff
+      code once. It stays signed in.</>,
+    <>A customer shows you their card. Point the camera at their code.</>,
+    <>Tap <strong>Add stamp</strong>. Got it wrong? You have 30 seconds to
+      undo it.</>,
+    <>When their card is full, that button becomes <strong>Redeem</strong>{' '}
+      instead. Tap it as you hand over the free one.</>,
+  ]
+  return (
+    <div className="mt-7">
+      <p className="text-sm font-semibold">At the counter</p>
+      <ol className="mt-2.5 space-y-2.5">
+        {steps.map((step, i) => (
+          <li key={i} className="flex gap-3 text-[13.5px] leading-snug">
+            <span className="flex size-5 flex-none items-center justify-center rounded-full
+                             bg-surface-2 text-[11px] font-bold tabular text-muted">
+              {i + 1}
+            </span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+      <a href={`/scan?store=${storeSlug}`} target="_blank" rel="noopener"
+         className="mt-3.5 inline-block text-[13.5px] font-semibold text-link hover:underline">
+        Open the scanner →
+      </a>
+    </div>
   )
 }
 
