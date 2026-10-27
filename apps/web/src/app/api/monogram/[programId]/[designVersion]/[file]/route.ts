@@ -28,17 +28,24 @@ const SIZE = 660
 const FONT = 'DejaVu Sans, Helvetica, Arial, sans-serif'
 
 /**
- * How much of the tile the logo may occupy.
+ * How much of the circle the logo's DIAGONAL may span.
  *
- * A circle cropped from a square keeps the inscribed square, which is 1/√2 —
- * about 70.7% — of the side. Anything outside that is cut.
+ * Not a box. A box is what makes this go wrong, and it goes wrong in
+ * opposite directions depending on the shape of the logo: fit a 5:1 wordmark
+ * into a square box and it ends up a thin line across the middle with half
+ * the circle empty; fit a square mark into the same box and it presses
+ * against the rim.
  *
- * 0.56 rather than something closer to that limit, because a mark that
- * reaches the edge of a circle reads as cropped even when it is not. Every
- * logo in a wallet app sits in a clear ring of space; without one it looks
- * like a mistake.
+ * The actual condition for a mark to sit inside a circle is
+ * (w/2)² + (h/2)² ≤ r² — its diagonal has to fit the diameter. So the
+ * diagonal is what gets scaled, and every shape then clears the edge by the
+ * same amount, whether the shop's logo is a wordmark, a square badge, a tall
+ * crest or a roundel.
+ *
+ * 0.80 leaves that clearance visible. A mark touching the edge of a circle
+ * reads as cropped even when it is not.
  */
-const SAFE = 0.56
+const DIAGONAL_SPAN = 0.80
 
 export async function GET(
   _req: Request,
@@ -85,13 +92,21 @@ export async function GET(
     // what gets sized, not whatever border its file happened to have.
     const trimmed = await trimLogo(logo)
 
+    // Size by the diagonal, so the result does not depend on whether this
+    // particular shop's logo happens to be wide, tall or square.
+    const meta = await sharp(trimmed).metadata()
+    const w = meta.width ?? SIZE
+    const h = meta.height ?? SIZE
+    const scale = (SIZE * DIAGONAL_SPAN) / Math.hypot(w, h)
+
     // White, not the brand colour: a logo is designed to sit on white, and a
     // dark mark dropped onto a dark brand background disappears inside a
     // 40-pixel circle.
-    const box = Math.round(SIZE * SAFE)
     const fitted = await sharp(trimmed)
-      .resize(box, box, { fit: 'inside', withoutEnlargement: false,
-                          background: { r: 255, g: 255, b: 255, alpha: 0 } })
+      .resize(Math.max(1, Math.round(w * scale)), Math.max(1, Math.round(h * scale)), {
+        fit: 'inside',
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+      })
       .toBuffer()
     png = await sharp({
       create: { width: SIZE, height: SIZE, channels: 4,
