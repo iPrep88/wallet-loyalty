@@ -3,7 +3,7 @@ import type { NextConfig } from 'next'
 const config: NextConfig = {
   // The workspace packages ship TypeScript source, not build output.
   transpilePackages: ['@wl/db', '@wl/passes', '@wl/shared'],
-  serverExternalPackages: ['sharp', 'pg'],
+  serverExternalPackages: ['sharp', 'pg', 'nodemailer'],
 
   // The short URLs are what we hand out — they go on wallet-review
   // submissions, in emails to shop owners, and anywhere a link has to be read

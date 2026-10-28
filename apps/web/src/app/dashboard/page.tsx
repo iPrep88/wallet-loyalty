@@ -1,11 +1,13 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { formatCentsRounded } from '@wl/shared/rewards'
+import { one } from '@wl/db'
 import { ownerContext } from '@/lib/owner-data'
 import { byStaff, byStore, customers, daysSinceLastScan, distribution, headline } from '@/lib/stats'
 import { Card, Eyebrow, Logo, Notice, SectionTitle } from '@/components/ui'
 import StampDistribution from './StampDistribution'
 import StaffCodes from './StaffCodes'
+import ConfirmEmail from './ConfirmEmail'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +22,10 @@ export default async function Dashboard(
   if (!store) redirect('/setup')
 
   const tz = ctx.company.timezone
+  const account = await one<{ email: string; email_verified_at: Date | null }>(
+    `select email, email_verified_at from users where id = $1`, [ctx.userId],
+  )
+
   const [head, dist, staff, stores, people, quietDays] = await Promise.all([
     headline(store.id, tz),
     distribution(store.id, ctx.program.stamps_required),
@@ -64,6 +70,10 @@ export default async function Dashboard(
             </div>
           )}
         </div>
+
+        {account && !account.email_verified_at && (
+          <div className="mt-6"><ConfirmEmail email={account.email} /></div>
+        )}
 
         {quietDays !== null && quietDays >= 4 && (
           <div className="mt-6">

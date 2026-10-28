@@ -102,10 +102,16 @@ export function SectionTitle({ children }: { children: ReactNode }) {
 }
 
 export function Notice(
-  { tone = 'info', children }: { tone?: 'info' | 'warn' | 'error'; children: ReactNode },
+  { tone = 'info', children }:
+    { tone?: 'info' | 'success' | 'warn' | 'error'; children: ReactNode },
 ) {
   const look = {
     info: 'border-line bg-accent-soft text-ink',
+    // Green, for the one case where the answer is simply yes — a confirmed
+    // email, a sent link. 'info' reads as "here is something to know", which
+    // makes a person look for what they still have to do.
+    success: 'border-emerald-300/60 bg-emerald-50 text-emerald-900 ' +
+             'dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-200',
     warn: 'border-amber-300/60 bg-amber-50 text-amber-900 ' +
           'dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200',
     error: 'border-red-300/60 bg-red-50 text-red-800 ' +

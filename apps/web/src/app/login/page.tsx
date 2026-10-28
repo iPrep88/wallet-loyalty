@@ -41,6 +41,11 @@ export default function LoginPage() {
             {busy ? 'Signing in…' : 'Sign in'}
           </Button>
           {error && <Notice tone="error">{error}</Notice>}
+          <p className="text-center text-[13px]">
+            <Link href="/forgot" className="font-semibold text-link hover:underline">
+              Forgot your password?
+            </Link>
+          </p>
         </form>
       </Card>
 
