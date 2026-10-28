@@ -5,6 +5,17 @@ const config: NextConfig = {
   transpilePackages: ['@wl/db', '@wl/passes', '@wl/shared'],
   serverExternalPackages: ['sharp', 'pg'],
 
+  // The short URLs are what we hand out — they go on wallet-review
+  // submissions, in emails to shop owners, and anywhere a link has to be read
+  // aloud or typed. The pages themselves live under /legal, and a reviewer
+  // who follows a 404 does not look for the real one.
+  async redirects() {
+    return [
+      { source: '/privacy', destination: '/legal/privacy', permanent: true },
+      { source: '/terms', destination: '/legal/terms', permanent: true },
+    ]
+  },
+
   async headers() {
     return [
       {
