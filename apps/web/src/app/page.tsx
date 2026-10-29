@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { BRAND } from './_brand'
 import { AddToWallet, FakeQr, Phone, PhotoSlot, StatusBar, WalletCard } from './_marketing'
 import { MARK } from '@wl/shared/mark'
+import { OPERATOR } from './legal/_shell'
 
 export const metadata = {
   title: 'REPIO — Loyalty cards that live in the wallet',
@@ -618,8 +619,14 @@ function Footer() {
             <a key={label} href={href} className="hover:text-white">{label}</a>
           ))}
         </nav>
+        {/* The operating company, named where anyone can see it.
+            Repio is the brand; iPrep Global Foods Ltd. is who you are actually
+            dealing with — and a wallet reviewer matching a merchant account to
+            this domain, or a shop owner deciding whether we are a real company
+            before handing over their customers, both look for exactly this and
+            should not have to open the privacy policy to find it. */}
         <span className="text-[12px]" style={{ color: 'rgba(232,244,255,.4)' }}>
-          © {new Date().getFullYear()} REPIO
+          © {new Date().getFullYear()} Repio — a product of {OPERATOR}, Toronto
         </span>
       </div>
     </footer>
