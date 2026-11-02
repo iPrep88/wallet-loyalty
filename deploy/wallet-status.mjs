@@ -83,7 +83,13 @@ for (const c of classes) {
   console.log(`    reviewStatus ${c.reviewStatus}`)
 }
 
-const approved = classes.filter((c) => c.reviewStatus === 'APPROVED')
+// Google answers in lowercase ("approved") while its own documentation writes
+// the enum in caps. Comparing against the documented spelling reported a
+// published issuer as still in demo mode — exactly backwards, and exactly the
+// kind of wrong answer that stops you selling something that works.
+const approved = classes.filter(
+  (c) => String(c.reviewStatus).toLowerCase() === 'approved',
+)
 console.log()
 if (approved.length === classes.length) {
   console.log('PUBLISHED. Anyone can save a card.')
